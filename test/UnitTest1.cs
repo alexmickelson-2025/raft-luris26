@@ -23,7 +23,20 @@ public class UnitTest1
         }
 
         // Assert
-        mockNeighbor1.ReceivedWithAnyArgs(4).ReceiveRPC();
-        mockNeighbor2.ReceivedWithAnyArgs(4).ReceiveRPC();
+        mockNeighbor1.ReceivedWithAnyArgs(4).respondRPC();
+        mockNeighbor2.ReceivedWithAnyArgs(4).respondRPC();
+    }
+
+    [Fact]
+    public void NewNodeStartsAsFollower()
+    {
+        // Arrange
+        var newNode = new ServerNode(true);
+
+        // Act
+        var initialState = newNode.State;
+
+        // Assert
+        Assert.Equal(NodeState.Follower, initialState);
     }
 }

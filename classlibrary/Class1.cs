@@ -9,6 +9,8 @@ public class ServerNode : IServerNode
     bool _isLeader { get; set; }
     private Timer _heartbeatTimer;
     private int _intervalHeartbeat;
+    public NodeState State { get; set; }
+    public ServerNode _currentLeader { get; set; }
 
     public ServerNode()
     {
@@ -23,14 +25,15 @@ public class ServerNode : IServerNode
         _neighbors = neighbors ?? new List<IServerNode>();
         _isLeader = false;
         _intervalHeartbeat = heartbeatInterval;
+        State = NodeState.Follower;
     }
 
-    public void ReceiveRPC()
+    public void requestRPC()
     {
-        throw new NotImplementedException();
+        _currentLeader = this;
     }
 
-    public void SendRPC()
+    public void respondRPC()
     {
         throw new NotImplementedException();
     }
@@ -75,19 +78,27 @@ public class ServerNode : IServerNode
         {
             foreach (var neighbor in _neighbors)
             {
-                neighbor.ReceiveRPC();
+                neighbor.respondRPC();
             }
         }
+    }
+    public ServerNode GetCurrentLeader()
+    {
+        return _currentLeader;
     }
 }
 
 public interface IServerNode
 {
-    void SendRPC();
+    void requestRPC(); //sent
     void Append(object state);
 
-    void ReceiveRPC();
-    //request
-    //respond 
+    void respondRPC(); //receive
+}
 
+public enum NodeState
+{
+    Follower,
+    Candidate,
+    Leader,
 }
