@@ -39,4 +39,17 @@ public class UnitTest1
         // Assert
         Assert.Equal(NodeState.Follower, initialState);
     }
+
+    [Fact]
+    public void FollowerStartsElectionAfterTimeout()
+    {
+        // Arrange
+        var follower = new ServerNode(true);
+
+        // Act
+        Thread.Sleep(350);
+
+        // Assert
+        Assert.Equal(NodeState.Candidate, follower.State);
+    }
 }

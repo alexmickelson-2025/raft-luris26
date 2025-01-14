@@ -7,7 +7,8 @@ public class ServerNode : IServerNode
     bool _vote { get; set; }
     List<IServerNode> _neighbors { get; set; }
     bool _isLeader { get; set; }
-    private Timer _heartbeatTimer;
+    private Timer _heartbeatTimer { get; set; }
+    Timer _electionTimer { get; set; }
     private int _intervalHeartbeat;
     public NodeState State { get; set; }
     public ServerNode _currentLeader { get; set; }
@@ -26,11 +27,32 @@ public class ServerNode : IServerNode
         _isLeader = false;
         _intervalHeartbeat = heartbeatInterval;
         State = NodeState.Follower;
+
+        StartElectionTimer();
     }
 
     public void requestRPC()
     {
         _currentLeader = this;
+        ResetElectionTimer();
+    }
+
+    void StartElectionTimer()
+    {
+        _electionTimer = new Timer(StartElection, null, 300, Timeout.Infinite);
+    }
+
+    void ResetElectionTimer()
+    {
+        _electionTimer?.Change(300, Timeout.Infinite);
+    }
+
+    private void StartElection(object? state)
+    {
+        if (State == NodeState.Follower)
+        {
+            State = NodeState.Candidate;
+        }
     }
 
     public void respondRPC()
@@ -51,7 +73,8 @@ public class ServerNode : IServerNode
 
         foreach (ServerNode neighbor in _neighbors)
         {
-            if (trueVotes == numberOfVotesToWin || falseVotes == numberOfVotesToWin) break;
+            if (trueVotes == numberOfVotesToWin || falseVotes == numberOfVotesToWin)
+                break;
 
             if (neighbor.ReturnVote())
             {
@@ -82,23 +105,9 @@ public class ServerNode : IServerNode
             }
         }
     }
+
     public ServerNode GetCurrentLeader()
     {
         return _currentLeader;
     }
-}
-
-public interface IServerNode
-{
-    void requestRPC(); //sent
-    void Append(object state);
-
-    void respondRPC(); //receive
-}
-
-public enum NodeState
-{
-    Follower,
-    Candidate,
-    Leader,
 }
