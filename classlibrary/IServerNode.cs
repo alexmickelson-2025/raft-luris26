@@ -6,4 +6,5 @@ public interface IServerNode
     void Append(object state);
 
     void respondRPC(); //receive
+    bool RequestVote(ServerNode candidate, int term);
 }

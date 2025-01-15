@@ -11,14 +11,18 @@ public class ServerNode : IServerNode
     private Timer? _electionTimer { get; set; }
     private int _intervalHeartbeat;
     public NodeState State { get; set; }
-    public ServerNode? _currentLeader { get; set; }
+    public ServerNode _currentLeader { get; set; }
     public int Term { get; set; }
+    private int _votesReceived;
+    private Random _random;
+    private bool _hasVoted = false;
 
     public ServerNode()
     {
         _neighbors = new List<IServerNode>();
         _vote = false;
         _isLeader = false;
+        _random = new Random();
     }
 
     public ServerNode(bool vote, List<IServerNode> neighbors = null, int heartbeatInterval = 50)
@@ -32,11 +36,11 @@ public class ServerNode : IServerNode
         _heartbeatTimer = null!;
         _electionTimer = null!;
         _currentLeader = null!;
+        _random = new Random();
 
         StartElectionTimer();
     }
 
-    //sent
     public void requestRPC(ServerNode sender, string rpcType)
     {
         if (rpcType == "AppendEntries")
@@ -48,7 +52,8 @@ public class ServerNode : IServerNode
 
     void StartElectionTimer()
     {
-        _electionTimer = new Timer(StartElection, null, 300, Timeout.Infinite);
+        int timeout = GetRandomElectionTimeout();
+        _electionTimer = new Timer(StartElection, null, timeout, Timeout.Infinite);
     }
 
     void ResetElectionTimer()
@@ -63,52 +68,51 @@ public class ServerNode : IServerNode
         {
             Term++;
             State = NodeState.Candidate;
+            _votesReceived = 1;
+
+            foreach (var neighbor in _neighbors)
+            {
+                if (neighbor.RequestVote(this, Term))
+                {
+                    _votesReceived++;
+                }
+            }
+            int majority = (_neighbors.Count + 1) / 2;
+            if (_votesReceived > majority)
+            {
+                BecomeLeader();
+            }
         }
     }
 
-    private int GetRandomElectionTimeout()
+    public bool RequestVote(ServerNode candidate, int term)
     {
-        Random random = new Random();
-        return random.Next(150, 301);
+        if (term > Term)
+        {
+            Term = term;
+            return true;
+        }
+        else if(term == Term && !_hasVoted)
+        {
+            _hasVoted =  true;
+            return true;
+        }
+        return false;
     }
 
-    // receive
+    public int GetRandomElectionTimeout()
+    {
+        return _random.Next(150, 301);
+    }
+
     public void respondRPC()
     {
-        Console.WriteLine("doing something");
-    }
-
-    public bool ReturnVote()
-    {
-        return _vote;
-    }
-
-    public bool CountVotesInTheCluster()
-    {
-        int numberOfVotesToWin = _neighbors.Count() / 2;
-        int trueVotes = 0;
-        int falseVotes = 0;
-
-        foreach (ServerNode neighbor in _neighbors)
-        {
-            if (trueVotes == numberOfVotesToWin || falseVotes == numberOfVotesToWin)
-                break;
-
-            if (neighbor.ReturnVote())
-            {
-                trueVotes++;
-            }
-            else
-            {
-                falseVotes++;
-            }
-        }
-
-        return trueVotes >= falseVotes;
+        Console.WriteLine("Received RPC");
     }
 
     public void BecomeLeader()
     {
+        State = NodeState.Leader;
         _isLeader = true;
         _heartbeatTimer = new Timer(Append, null, 0, _intervalHeartbeat);
     }
