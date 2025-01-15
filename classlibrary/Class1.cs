@@ -7,11 +7,12 @@ public class ServerNode : IServerNode
     bool _vote { get; set; }
     List<IServerNode> _neighbors { get; set; }
     bool _isLeader { get; set; }
-    private Timer _heartbeatTimer { get; set; }
-    Timer _electionTimer { get; set; }
+    private Timer? _heartbeatTimer { get; set; }
+    private Timer? _electionTimer { get; set; }
     private int _intervalHeartbeat;
     public NodeState State { get; set; }
-    public ServerNode _currentLeader { get; set; }
+    public ServerNode? _currentLeader { get; set; }
+    public int Term { get; set; }
 
     public ServerNode()
     {
@@ -27,14 +28,22 @@ public class ServerNode : IServerNode
         _isLeader = false;
         _intervalHeartbeat = heartbeatInterval;
         State = NodeState.Follower;
+        Term = 0;
+        _heartbeatTimer = null!;
+        _electionTimer = null!;
+        _currentLeader = null!;
 
         StartElectionTimer();
     }
 
-    public void requestRPC()
+    //sent
+    public void requestRPC(ServerNode sender, string rpcType)
     {
-        _currentLeader = this;
-        ResetElectionTimer();
+        if (rpcType == "AppendEntries")
+        {
+            _currentLeader = sender;
+            ResetElectionTimer();
+        }
     }
 
     void StartElectionTimer()
@@ -44,20 +53,29 @@ public class ServerNode : IServerNode
 
     void ResetElectionTimer()
     {
-        _electionTimer?.Change(300, Timeout.Infinite);
+        int timeout = GetRandomElectionTimeout();
+        _electionTimer?.Change(timeout, Timeout.Infinite);
     }
 
     private void StartElection(object? state)
     {
-        if (State == NodeState.Follower)
+        if (State == NodeState.Follower || State == NodeState.Candidate)
         {
+            Term++;
             State = NodeState.Candidate;
         }
     }
 
+    private int GetRandomElectionTimeout()
+    {
+        Random random = new Random();
+        return random.Next(150, 301);
+    }
+
+    // receive
     public void respondRPC()
     {
-        throw new NotImplementedException();
+        Console.WriteLine("doing something");
     }
 
     public bool ReturnVote()

@@ -2,7 +2,7 @@ namespace classlibrary;
 
 public interface IServerNode
 {
-    void requestRPC(); //sent
+    void requestRPC(ServerNode sender, string rpcType); //sent
     void Append(object state);
 
     void respondRPC(); //receive
