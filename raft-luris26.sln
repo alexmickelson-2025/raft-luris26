@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "classlibrary", "classlibrar
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "test", "test\test.csproj", "{28F26A7D-9C66-4649-824E-42DB747AE2E7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaftSimulation", "RaftSimulation\RaftSimulation.csproj", "{C0EADF03-CA3B-4CCA-95A8-06C86A6E0C1C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{28F26A7D-9C66-4649-824E-42DB747AE2E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{28F26A7D-9C66-4649-824E-42DB747AE2E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{28F26A7D-9C66-4649-824E-42DB747AE2E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0EADF03-CA3B-4CCA-95A8-06C86A6E0C1C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0EADF03-CA3B-4CCA-95A8-06C86A6E0C1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0EADF03-CA3B-4CCA-95A8-06C86A6E0C1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0EADF03-CA3B-4CCA-95A8-06C86A6E0C1C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
