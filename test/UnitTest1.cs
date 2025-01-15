@@ -6,6 +6,7 @@ namespace test;
 
 public class UnitTest1
 {
+    //1
     [Fact]
     public void LeaderSendsHeartbeatsToAllNeighborsWithin50ms()
     {
@@ -21,7 +22,7 @@ public class UnitTest1
         mockNeighbor2.ReceivedWithAnyArgs(5).respondRPC();
     }
 
-    // 2. Verificar que un nodo recuerda al líder al recibir un AppendEntries.
+    // 2 Verificar que un nodo recuerda al líder al recibir un AppendEntries.
     [Fact]
     public void NodeRemembersCurrentLeader()
     {
@@ -33,7 +34,7 @@ public class UnitTest1
         Assert.Equal(leaderNode, followerNode.GetCurrentLeader());
     }
 
-    // 3. Verificar que un nodo nuevo empieza como Follower.
+    // 3 Verificar que un nodo nuevo empieza como follower
     [Fact]
     public void NewNodeStartsAsFollower()
     {
@@ -42,7 +43,7 @@ public class UnitTest1
         Assert.Equal(NodeState.Follower, newNode.State);
     }
 
-    //ojo
+    //no idea I need to work more on it
     // 4. Verificar que un Follower inicia una elección tras 300ms sin mensajes.
     [Fact]
     public void FollowerStartsElectionAfterTimeout()
@@ -51,7 +52,7 @@ public class UnitTest1
 
         Thread.Sleep(350);
 
-        Assert.Equal(NodeState.Leader, follower.State);
+        Assert.Equal(NodeState.Candidate, follower.State);
     }
 
     // 5. Verificar que el tiempo de elección es aleatorio entre 150ms y 300ms.
@@ -113,7 +114,7 @@ public class UnitTest1
         Assert.Equal(NodeState.Leader, candidate.State);
     }
 
-    //9
+    //9. CAndidato se convierte en lider con la mayoria de votos.
     [Fact]
     public void CandidateBecomesLeaderWithMajorityVotesDespiteUnresponsiveNode()
     {
@@ -132,4 +133,43 @@ public class UnitTest1
         Assert.Equal(NodeState.Leader, candidate.State);
     }
 
+    //10 un follower que aun no ha votado y es un earlier term a un respond de si
+
+    [Fact]
+    public void FollowerRespondYesToRequestVoteWithHigherTerm()
+    {
+        //Arrange
+        var follower = new ServerNode(true);
+        follower.Term = 1;
+
+        var candidate = new ServerNode(true);
+        //Act
+        bool voted = follower.RequestVote(candidate, 2);
+
+        //Assert
+        Assert.True(voted);
+        Assert.Equal(2, follower.Term);
+    }
+
+    //10 esta soy yo comprobando un segundo voto/ this is me double checking 2 votes
+    [Fact]
+    public void FollowerDoesNotVoteTwiceInSameTerm()
+    {
+        // Arrange
+        var follower = new ServerNode(true);
+        follower.Term = 1;
+
+        var candidate1 = new ServerNode(true);
+        var candidate2 = new ServerNode(true);
+
+        // Act
+        bool firstVote = follower.RequestVote(candidate1, 1);
+        bool secondVote = follower.RequestVote(candidate2, 1);
+
+        // Assert
+        Assert.True(firstVote);
+        Assert.False(secondVote);
+    }
+
+    //11
 }

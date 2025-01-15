@@ -69,6 +69,7 @@ public class ServerNode : IServerNode
             Term++;
             State = NodeState.Candidate;
             _votesReceived = 1;
+            //  Thread.Sleep(100);
 
             foreach (var neighbor in _neighbors)
             {
@@ -90,11 +91,12 @@ public class ServerNode : IServerNode
         if (term > Term)
         {
             Term = term;
+            _hasVoted = true;
             return true;
         }
         else if(term == Term && !_hasVoted)
         {
-            _hasVoted =  true;
+            _hasVoted = true;
             return true;
         }
         return false;
