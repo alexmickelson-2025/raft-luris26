@@ -49,9 +49,14 @@ public class ServerNode : IServerNode
     {
         if (rpcType == "AppendEntries")
         {
-            if (sender.Term > Term)
+            if (sender.Term >= Term)
             {
                 Term = sender.Term;
+            }
+
+            if (sender.Term < Term)
+            {
+                return;
             }
             State = NodeState.Follower;
             _currentLeader = sender;

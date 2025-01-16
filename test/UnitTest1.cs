@@ -309,4 +309,25 @@ public class UnitTest1
         leader.Received(1).respondRPC();
     }
 
+    //18
+    [Fact]
+    public void CandidateRejectsAppendEntriesWithPreviousTerm()
+    {
+        // Arrange
+        var candidate = new ServerNode();
+        candidate.State = NodeState.Candidate;
+        candidate.Term = 5;
+
+        var sender = new ServerNode();
+        sender.Term = 4;
+
+        // Act
+        candidate.requestRPC(sender, "AppendEntries");
+
+        // Assert
+        Assert.Equal(NodeState.Candidate, candidate.State);
+        Assert.Equal(5, candidate.Term);
+        Assert.Null(candidate.GetCurrentLeader());
+    }
+    //19
 }
