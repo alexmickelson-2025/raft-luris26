@@ -184,4 +184,26 @@ public class UnitTest1
         Assert.Equal(candidate.Id, candidate.votedFor);
         Assert.Equal(1, candidate._votesReceived);
     }
+
+    //12
+    [Fact]
+    public void CandidateBecomesFollowerUponReceivingAppendEntriesWithLaterTerm()
+    {
+        // Arrange
+        var candidate = new ServerNode();
+        candidate.State = NodeState.Candidate;
+        candidate.Term = 5;
+
+        var leader = new ServerNode();
+        leader.Term = 6;
+
+        // Act
+        candidate.requestRPC(leader, "AppendEntries");
+
+        // Assert
+        Assert.Equal(NodeState.Follower, candidate.State); //foller
+        Assert.Equal(6, candidate.Term);
+        Assert.Equal(leader, candidate.GetCurrentLeader());
+    }
+
 }

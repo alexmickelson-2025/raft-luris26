@@ -53,10 +53,8 @@ public class ServerNode : IServerNode
             State = NodeState.Follower;
             _currentLeader = sender;
             ResetElectionTimer();
-            Console.WriteLine($"Node {Id} reset election timer on AppendEntries from {sender.Id}");
         }
     }
-
 
     void StartElectionTimer()
     {
