@@ -288,4 +288,25 @@ public class UnitTest1
         neighbor1.Received().RequestVote(candidate, 2);
         neighbor2.Received().RequestVote(candidate, 2);
     }
+
+    //17
+    [Fact]
+    public void FollowerSendsResponseUponReceivingAppendEntries()
+    {
+        // Arrange
+        var leader = Substitute.For<IServerNode>();
+        var follower = new ServerNode();
+
+        leader.Term.Returns(5);
+        leader.Id.Returns("leader-node-id");
+
+        // Act
+        follower.requestRPC(leader, "AppendEntries");
+
+        // Assert
+        Assert.Equal(NodeState.Follower, follower.State);
+        Assert.Equal(5, follower.Term);
+        leader.Received(1).respondRPC();
+    }
+
 }

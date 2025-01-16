@@ -12,7 +12,7 @@ public class ServerNode : IServerNode
     private Timer? _electionTimer { get; set; }
     private int _intervalHeartbeat;
     public NodeState State { get; set; }
-    public ServerNode _currentLeader { get; set; }
+    public IServerNode _currentLeader { get; set; }
     public int Term { get; set; }
     public int _votesReceived;
     private Random _random;
@@ -45,7 +45,7 @@ public class ServerNode : IServerNode
         StartElectionTimer();
     }
 
-    public void requestRPC(ServerNode sender, string rpcType)
+    public void requestRPC(IServerNode sender, string rpcType)
     {
         if (rpcType == "AppendEntries")
         {
@@ -56,6 +56,7 @@ public class ServerNode : IServerNode
             State = NodeState.Follower;
             _currentLeader = sender;
             ResetElectionTimer();
+            sender.respondRPC();
         }
     }
 
@@ -80,7 +81,6 @@ public class ServerNode : IServerNode
             votedFor = Id;
             _votesReceived = 1;
 
-            //testing
             foreach (var neighbor in _neighbors)
             {
                 if (neighbor.RequestVote(this, Term))
@@ -152,7 +152,7 @@ public class ServerNode : IServerNode
         }
     }
 
-    public ServerNode GetCurrentLeader()
+    public IServerNode GetCurrentLeader()
     {
         return _currentLeader;
     }
