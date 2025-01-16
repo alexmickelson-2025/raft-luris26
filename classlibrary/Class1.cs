@@ -49,7 +49,10 @@ public class ServerNode : IServerNode
     {
         if (rpcType == "AppendEntries")
         {
-            Term = sender.Term;
+            if (sender.Term > Term)
+            {
+                Term = sender.Term;
+            }
             State = NodeState.Follower;
             _currentLeader = sender;
             ResetElectionTimer();
@@ -104,11 +107,18 @@ public class ServerNode : IServerNode
             _hasVoted = true;
             return true;
         }
-        else if (term == Term && votedFor == null)
+        else if (term == Term)
         {
-            votedFor = candidate.Id;
-            _hasVoted = true;
-            return true;
+            if (votedFor == null)
+            {
+                votedFor = candidate.Id;
+                _hasVoted = true;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
         return false;
     }

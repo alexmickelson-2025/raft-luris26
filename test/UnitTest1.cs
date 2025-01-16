@@ -206,4 +206,46 @@ public class UnitTest1
         Assert.Equal(leader, candidate.GetCurrentLeader());
     }
 
+    //13
+    [Fact]
+    public void CandidateBecomesFollowerUponReceivingAppendEntriesWithEqualTerm()
+    {
+        // Arrange
+        var candidate = new ServerNode();
+        candidate.State = NodeState.Candidate;
+        candidate.Term = 5;
+
+        var leader = new ServerNode();
+        leader.Term = 5;
+
+        // Act
+        candidate.requestRPC(leader, "AppendEntries");
+
+        // Assert
+        Assert.Equal(NodeState.Follower, candidate.State);
+        Assert.Equal(5, candidate.Term);
+        Assert.Equal(leader, candidate.GetCurrentLeader());
+    }
+
+    //14
+    [Fact]
+    public void NodeDeniesSecondVoteRequestForSameTerm()
+    {
+        // Arrange
+        var node = new ServerNode();
+        node.Term = 5;
+
+        var candidate1 = new ServerNode();
+        var candidate2 = new ServerNode();
+
+        // Act
+        bool firstVote = node.RequestVote(candidate1, 5);
+        bool secondVote = node.RequestVote(candidate2, 5);
+
+        // Assert
+        Assert.True(firstVote);
+        Assert.False(secondVote);
+    }
+
+    //15
 }
