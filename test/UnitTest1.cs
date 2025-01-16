@@ -248,4 +248,22 @@ public class UnitTest1
     }
 
     //15
+    [Fact]
+    public void NodeVotesForFutureTerm()
+    {
+        // Arrange
+        var node = new ServerNode();
+        node.Term = 5;
+        node.votedFor = "some-other-node";
+
+        var futureCandidate = new ServerNode();
+
+        // Act
+        bool voteGranted = node.RequestVote(futureCandidate, 6);
+
+        // Assert
+        Assert.True(voteGranted);
+        Assert.Equal(6, node.Term);
+        Assert.Equal(futureCandidate.Id, node.votedFor);
+    }
 }
