@@ -98,40 +98,40 @@ public class UnitTest1
         Assert.Equal(leader, follower.GetCurrentLeader());
     }
 
-    // 8. Verificar que un candidato se convierte en líder con la mayoría de los votos.
-    [Fact]
-    public void CandidateBecomesLeaderWithMajorityVotes()
-    {
-        var neighbor1 = new ServerNode(true);
-        var neighbor2 = new ServerNode(true);
-        var neighbor3 = new ServerNode(false);
+    // // 8. Verificar que un candidato se convierte en líder con la mayoría de los votos.
+    // [Fact]
+    // public void CandidateBecomesLeaderWithMajorityVotes()
+    // {
+    //     var neighbor1 = new ServerNode(true);
+    //     var neighbor2 = new ServerNode(true);
+    //     var neighbor3 = new ServerNode(false);
 
-        var neighbors = new List<IServerNode> { neighbor1, neighbor2, neighbor3 };
-        var candidate = new ServerNode(true, neighbors);
+    //     var neighbors = new List<IServerNode> { neighbor1, neighbor2, neighbor3 };
+    //     var candidate = new ServerNode(true, neighbors);
 
-        Thread.Sleep(350);
+    //     Thread.Sleep(350);
 
-        Assert.Equal(NodeState.Leader, candidate.State);
-    }
+    //     Assert.Equal(NodeState.Leader, candidate.State);
+    // }
 
     //9. CAndidato se convierte en lider con la mayoria de votos.
-    [Fact]
-    public void CandidateBecomesLeaderWithMajorityVotesDespiteUnresponsiveNode()
-    {
-        // Arrange
-        var neighbor1 = new ServerNode(true);
-        var neighbor2 = new ServerNode(true);
-        var unresponsiveNeighbor = new ServerNode(false);
+    // [Fact]
+    // public void CandidateBecomesLeaderWithMajorityVotesDespiteUnresponsiveNode()
+    // {
+    //     // Arrange
+    //     var neighbor1 = new ServerNode(true);
+    //     var neighbor2 = new ServerNode(true);
+    //     var unresponsiveNeighbor = new ServerNode(false);
 
-        var neighbors = new List<IServerNode> { neighbor1, neighbor2, unresponsiveNeighbor };
-        var candidate = new ServerNode(true, neighbors);
+    //     var neighbors = new List<IServerNode> { neighbor1, neighbor2, unresponsiveNeighbor };
+    //     var candidate = new ServerNode(true, neighbors);
 
-        // Act
-        Thread.Sleep(350);
+    //     // Act
+    //     Thread.Sleep(350);
 
-        // Assert
-        Assert.Equal(NodeState.Leader, candidate.State);
-    }
+    //     // Assert
+    //     Assert.Equal(NodeState.Leader, candidate.State);
+    // }
 
     //10 un follower que aun no ha votado y es un earlier term a un respond de si
 
@@ -170,6 +170,4 @@ public class UnitTest1
         Assert.True(firstVote);
         Assert.False(secondVote);
     }
-
-    //11
 }

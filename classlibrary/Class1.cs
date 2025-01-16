@@ -14,9 +14,10 @@ public class ServerNode : IServerNode
     public NodeState State { get; set; }
     public ServerNode _currentLeader { get; set; }
     public int Term { get; set; }
-    private int _votesReceived;
+    public int _votesReceived;
     private Random _random;
     private bool _hasVoted = false;
+    public string? votedFor;
 
     public ServerNode()
     {
@@ -65,14 +66,14 @@ public class ServerNode : IServerNode
         _electionTimer?.Change(timeout, Timeout.Infinite);
     }
 
-    private void StartElection(object? state)
+    public void StartElection(object? state)
     {
         if (State == NodeState.Follower || State == NodeState.Candidate)
         {
             Term++;
             State = NodeState.Candidate;
+            votedFor = Id;
             _votesReceived = 1;
-            //  Thread.Sleep(100);
 
             foreach (var neighbor in _neighbors)
             {
@@ -94,11 +95,13 @@ public class ServerNode : IServerNode
         if (term > Term)
         {
             Term = term;
+            votedFor = candidate.Id;
             _hasVoted = true;
             return true;
         }
-        else if (term == Term && !_hasVoted)
+        else if (term == Term && votedFor == null)
         {
+            votedFor = candidate.Id;
             _hasVoted = true;
             return true;
         }
