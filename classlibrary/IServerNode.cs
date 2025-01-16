@@ -11,5 +11,4 @@ public interface IServerNode
 
     void respondRPC(); //receive
     bool RequestVote(ServerNode candidate, int term);
-    
 }

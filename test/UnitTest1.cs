@@ -43,19 +43,18 @@ public class UnitTest1
         Assert.Equal(NodeState.Follower, newNode.State);
     }
 
-    // //no idea I need to work more on it
-    // // 4. Verificar que un Follower inicia una elección tras 300ms sin mensajes.
-    // [Fact]
-    // public void FollowerStartsElectionAfterTimeout()
-    // {
-    //     var follower = new ServerNode(true);
+    // 4
+    [Fact]
+    public void FollowerStartsElectionAfterTimeout()
+    {
+        var follower = new ServerNode(true);
 
-    //     Thread.Sleep(350);
+        Thread.Sleep(350);
 
-    //     Assert.Equal(NodeState.Candidate, follower.State);
-    // }
-
-    // 5. Verificar que el tiempo de elección es aleatorio entre 150ms y 300ms.
+        Assert.Equal(NodeState.Candidate, follower.State);
+    }
+    //test to be random...
+    // // 5. Verificar que el tiempo de elección es aleatorio entre 150ms y 300ms.
     [Fact]
     public void ElectionTimeoutIsRandomBetween150And300ms()
     {
@@ -73,7 +72,7 @@ public class UnitTest1
         Assert.Contains(timeouts, t => t > 250);
     }
 
-    // 6. Verificar que el término aumenta al iniciar una nueva elección.
+    // // 6. Verificar que el término aumenta al iniciar una nueva elección.
     [Fact]
     public void ElectionIncrementsTerm()
     {
@@ -85,8 +84,8 @@ public class UnitTest1
 
         Assert.Equal(initialTerm + 1, newTerm);
     }
-
-    // 7. Verificar que AppendEntries reinicia el temporizador de elección.
+    //test to random ...
+    // // 7. Verificar que AppendEntries reinicia el temporizador de elección.
     [Fact]
     public void AppendEntriesResetsElectionTimer()
     {
@@ -98,7 +97,7 @@ public class UnitTest1
         Assert.Equal(leader, follower.GetCurrentLeader());
     }
 
-    // // 8. Verificar que un candidato se convierte en líder con la mayoría de los votos.
+    // // // 8. Verificar que un candidato se convierte en líder con la mayoría de los votos.
     // [Fact]
     // public void CandidateBecomesLeaderWithMajorityVotes()
     // {
@@ -114,7 +113,7 @@ public class UnitTest1
     //     Assert.Equal(NodeState.Leader, candidate.State);
     // }
 
-    //9. CAndidato se convierte en lider con la mayoria de votos.
+    // //9. CAndidato se convierte en lider con la mayoria de votos.
     // [Fact]
     // public void CandidateBecomesLeaderWithMajorityVotesDespiteUnresponsiveNode()
     // {
@@ -127,13 +126,13 @@ public class UnitTest1
     //     var candidate = new ServerNode(true, neighbors);
 
     //     // Act
-    //     Thread.Sleep(350);
+    //     Thread.Sleep(3500);
 
     //     // Assert
     //     Assert.Equal(NodeState.Leader, candidate.State);
     // }
 
-    //10 un follower que aun no ha votado y es un earlier term a un respond de si
+    // //10 un follower que aun no ha votado y es un earlier term a un respond de si
 
     [Fact]
     public void FollowerRespondYesToRequestVoteWithHigherTerm()
@@ -151,7 +150,7 @@ public class UnitTest1
         Assert.Equal(2, follower.Term);
     }
 
-    //10 esta soy yo comprobando un segundo voto/ this is me double checking 2 votes
+    // //10 esta soy yo comprobando un segundo voto/ this is me double checking 2 votes
     [Fact]
     public void FollowerDoesNotVoteTwiceInSameTerm()
     {
@@ -169,5 +168,20 @@ public class UnitTest1
         // Assert
         Assert.True(firstVote);
         Assert.False(secondVote);
+    }
+
+    // //11
+    [Fact]
+    public void CandidateVotesForItself()
+    {
+        // Arrange
+        var candidate = new ServerNode();
+
+        // Act
+        candidate.StartElection(null);
+
+        // Assert
+        Assert.Equal(candidate.Id, candidate.votedFor);
+        Assert.Equal(1, candidate._votesReceived);
     }
 }

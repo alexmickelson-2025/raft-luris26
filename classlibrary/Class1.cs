@@ -49,10 +49,14 @@ public class ServerNode : IServerNode
     {
         if (rpcType == "AppendEntries")
         {
+            Term = sender.Term;
+            State = NodeState.Follower;
             _currentLeader = sender;
             ResetElectionTimer();
+            Console.WriteLine($"Node {Id} reset election timer on AppendEntries from {sender.Id}");
         }
     }
+
 
     void StartElectionTimer()
     {
@@ -75,6 +79,7 @@ public class ServerNode : IServerNode
             votedFor = Id;
             _votesReceived = 1;
 
+            //testing
             foreach (var neighbor in _neighbors)
             {
                 if (neighbor.RequestVote(this, Term))
@@ -82,6 +87,8 @@ public class ServerNode : IServerNode
                     _votesReceived++;
                 }
             }
+
+            Thread.Sleep(500);
             int majority = (_neighbors.Count + 1) / 2;
             if (_votesReceived > majority)
             {
@@ -122,6 +129,7 @@ public class ServerNode : IServerNode
     {
         State = NodeState.Leader;
         _isLeader = true;
+        Console.WriteLine($"Node {Id} became the Leader for term {Term}");
         _heartbeatTimer = new Timer(Append, null, 0, _intervalHeartbeat);
     }
 
