@@ -4,9 +4,10 @@ namespace classlibrary;
 
 public class ServerNode : IServerNode
 {
-    bool _vote { get; set; }
-    List<IServerNode> _neighbors { get; set; }
-    bool _isLeader { get; set; }
+    public string Id { get; set; }
+    private bool _vote { get; set; }
+    private List<IServerNode> _neighbors { get; set; }
+    private bool _isLeader { get; set; }
     private Timer? _heartbeatTimer { get; set; }
     private Timer? _electionTimer { get; set; }
     private int _intervalHeartbeat;
@@ -23,10 +24,12 @@ public class ServerNode : IServerNode
         _vote = false;
         _isLeader = false;
         _random = new Random();
+        Id = Guid.NewGuid().ToString();
     }
 
-    public ServerNode(bool vote, List<IServerNode> neighbors = null, int heartbeatInterval = 50)
+    public ServerNode(bool vote, List<IServerNode> neighbors = null, int heartbeatInterval = 50, string id = null)
     {
+        Id = id ?? Guid.NewGuid().ToString();
         _vote = vote;
         _neighbors = neighbors ?? new List<IServerNode>();
         _isLeader = false;
@@ -94,7 +97,7 @@ public class ServerNode : IServerNode
             _hasVoted = true;
             return true;
         }
-        else if(term == Term && !_hasVoted)
+        else if (term == Term && !_hasVoted)
         {
             _hasVoted = true;
             return true;
