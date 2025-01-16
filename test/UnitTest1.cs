@@ -266,4 +266,26 @@ public class UnitTest1
         Assert.Equal(6, node.Term);
         Assert.Equal(futureCandidate.Id, node.votedFor);
     }
+
+    //16
+    [Fact]
+    public void CandidateStartsNewElectionAfterTimeout()
+    {
+        // Arrange
+        var neighbor1 = Substitute.For<IServerNode>();
+        var neighbor2 = Substitute.For<IServerNode>();
+        var neighbors = new List<IServerNode> { neighbor1, neighbor2 };
+        var candidate = new ServerNode(true, neighbors);
+
+        // Act
+        candidate.StartElection(null);
+
+        Thread.Sleep(candidate.GetRandomElectionTimeout() + 50);
+
+        // Assert
+        Assert.Equal(NodeState.Candidate, candidate.State);
+        Assert.Equal(2, candidate.Term);
+        neighbor1.Received().RequestVote(candidate, 2);
+        neighbor2.Received().RequestVote(candidate, 2);
+    }
 }
