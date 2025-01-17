@@ -6,7 +6,7 @@ public class ServerNode : IServerNode
 {
     public string Id { get; set; }
     private bool _vote { get; set; }
-    private List<IServerNode> _neighbors { get; set; }
+    public List<IServerNode> _neighbors { get; set; }
     private bool _isLeader { get; set; }
     private Timer? _heartbeatTimer { get; set; }
     private Timer? _electionTimer { get; set; }
@@ -65,7 +65,7 @@ public class ServerNode : IServerNode
         }
     }
 
-    void StartElectionTimer()
+    public void StartElectionTimer()
     {
         int timeout = GetRandomElectionTimeout();
         _electionTimer = new Timer(StartElection, null, timeout, Timeout.Infinite);
@@ -170,5 +170,10 @@ public class ServerNode : IServerNode
             State = NodeState.Follower;
             ResetElectionTimer();
         }
+    }
+
+    public void SetNeighbors(List<IServerNode> neighbors)
+    {
+        _neighbors = neighbors;
     }
 }

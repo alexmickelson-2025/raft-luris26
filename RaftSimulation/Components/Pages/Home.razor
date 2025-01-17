@@ -9,14 +9,20 @@
 Welcome to your new app.
 <button @onclick="startSimulation">start</button>
 
-@if(nodes != null)
+@if (nodes != null)
 {
-    @foreach (var node in nodes)
-    {
-        <div>
-            @node.Term
-        </div>
-    }
+    <div class="row">
+        @foreach (var node in nodes)
+        {
+            <div class="col-4">
+                <div class="border p-3 rounded-3">
+                    <h3>Node @node.Id</h3>
+                    <p>Status: @node.State</p>
+                    <p>Term: @node.Term</p>
+                </div>
+            </div>
+        }
+    </div>
 }
 
 @code {
@@ -31,6 +37,7 @@ Welcome to your new app.
         var SimulationNode = new SimulationNode(node1);
         var simulationNode2 = new SimulationNode(node2);
         var simulationNode3 = new SimulationNode(node3);
+
 
         nodes = [simulationNode2, simulationNode3, SimulationNode];
         StateHasChanged();

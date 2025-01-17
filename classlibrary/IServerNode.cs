@@ -2,6 +2,7 @@ namespace classlibrary;
 
 public interface IServerNode
 {
+    public List<IServerNode> _neighbors { get; set; }
     public string Id { get; set; }
     public NodeState State { get; set; }
     public IServerNode _currentLeader { get; set; }
@@ -12,4 +13,5 @@ public interface IServerNode
 
     void respondRPC(); //receive
     bool RequestVote(ServerNode candidate, int term);
+    void SetNeighbors(List<IServerNode> neighbors);
 }
