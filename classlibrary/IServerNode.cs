@@ -8,6 +8,7 @@ public interface IServerNode
     public int Term { get; set; }
     void requestRPC(IServerNode sender, string rpcType); //sent
     void Append(object state);
+    void AppendEntries(ServerNode leader, int term, List<LogEntry> entries);
 
     void respondRPC(); //receive
     bool RequestVote(ServerNode candidate, int term);

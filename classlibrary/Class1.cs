@@ -142,8 +142,8 @@ public class ServerNode : IServerNode
     {
         State = NodeState.Leader;
         _isLeader = true;
-        Console.WriteLine($"Node {Id} became the Leader for term {Term}");
         _heartbeatTimer = new Timer(Append, null, 0, _intervalHeartbeat);
+        // AppendEntries(this, Term, new List<LogEntry>());
     }
 
     public void Append(object state)
@@ -160,5 +160,15 @@ public class ServerNode : IServerNode
     public IServerNode GetCurrentLeader()
     {
         return _currentLeader;
+    }
+    public void AppendEntries(ServerNode leader, int term, List<LogEntry> entries)
+    {
+        if (term >= Term)
+        {
+            Term = term;
+            _currentLeader = leader;
+            State = NodeState.Follower;
+            ResetElectionTimer();
+        }
     }
 }
