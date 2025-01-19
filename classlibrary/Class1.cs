@@ -132,7 +132,7 @@ public class ServerNode : IServerNode
 
         // Send immediate heartbeat
         var heartbeatTasks = _neighbors.Select(neighbor =>
-            neighbor.AppendEntries(this, Term, new List<LogEntry>())
+            neighbor.AppendEntries(this, Term)
         );
 
         await Task.WhenAll(heartbeatTasks);
@@ -175,7 +175,7 @@ public class ServerNode : IServerNode
         return false;
     }
 
-    public async Task AppendEntries(IServerNode leader, int term, List<LogEntry> entries)
+    public async Task AppendEntries(IServerNode leader, int term)
     {
         await Task.Delay(10);
         if (term >= Term)

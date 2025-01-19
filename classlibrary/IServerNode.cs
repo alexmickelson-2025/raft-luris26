@@ -15,7 +15,7 @@ public interface IServerNode
 
     public IEnumerable<IServerNode> GetNeighbors() => _neighbors;
     Task requestRPC(IServerNode sender, string rpcType); //sent
-    Task AppendEntries(IServerNode leader, int term, List<LogEntry> entries);
+    Task AppendEntries(IServerNode leader, int term);
 
     void respondRPC(); //receive
     Task<bool> RequestVoteAsync(IServerNode candidate, int term);

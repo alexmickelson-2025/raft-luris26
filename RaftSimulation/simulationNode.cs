@@ -55,14 +55,14 @@ public class SimulationNode : IServerNode
         set => throw new NotImplementedException();
     }
 
-    public void AppendEntries(ServerNode leader, int term, List<LogEntry> entries)
+    public void AppendEntries(ServerNode leader, int term)
     {
-        ((IServerNode)InnerNode).AppendEntries(leader, term, entries);
+        ((IServerNode)InnerNode).AppendEntries(leader, term);
     }
 
-    public Task AppendEntries(IServerNode leader, int term, List<LogEntry> entries)
+    public Task AppendEntries(IServerNode leader, int term)
     {
-        return ((IServerNode)InnerNode).AppendEntries(leader, term, entries);
+        return ((IServerNode)InnerNode).AppendEntries(leader, term);
     }
 
     public IServerNode GetCurrentLeader()
