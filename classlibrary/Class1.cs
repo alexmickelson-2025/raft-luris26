@@ -1,4 +1,5 @@
 ﻿using System.Data.Common;
+using System.Threading.Tasks;
 
 namespace classlibrary;
 
@@ -6,18 +7,24 @@ public class ServerNode : IServerNode
 {
     public string Id { get; set; }
     private bool _vote { get; set; }
-    public List<IServerNode> _neighbors { get; set; }
+    public string CurrentLiderID { get; set; }
     private bool _isLeader { get; set; }
-    private Timer? _heartbeatTimer { get; set; }
-    private Timer? _electionTimer { get; set; }
-    private int _intervalHeartbeat;
-    public NodeState State { get; set; }
-    public IServerNode _currentLeader { get; set; }
-    public int Term { get; set; }
-    public int _votesReceived;
-    private Random _random;
     private bool _hasVoted = false;
     public string? votedFor;
+    public int Term { get; set; }
+    private int _intervalHeartbeat;
+    public int _votesReceived;
+    public bool SimulationRunning { get; set; }
+    private Random _random;
+    public List<IServerNode> _neighbors { get; set; }
+    private Timer? _heartbeatTimer { get; set; }
+    private Timer? _electionTimer { get; set; }
+    public NodeState State { get; set; }
+    public IServerNode _innerNode { get; set; }
+    private int _timeoutMultiplier = 1;
+    public IServerNode InnerNode { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+    public object CancellationTokenSource => throw new NotImplementedException();
 
     public ServerNode()
     {
@@ -39,13 +46,13 @@ public class ServerNode : IServerNode
         Term = 0;
         _heartbeatTimer = null!;
         _electionTimer = null!;
-        _currentLeader = null!;
+        _innerNode = null!;
         _random = new Random();
 
         StartElectionTimer();
     }
 
-    public void requestRPC(IServerNode sender, string rpcType)
+    public async Task requestRPC(IServerNode sender, string rpcType)
     {
         if (rpcType == "AppendEntries")
         {
@@ -59,16 +66,21 @@ public class ServerNode : IServerNode
                 return;
             }
             State = NodeState.Follower;
-            _currentLeader = sender;
+            _innerNode = sender;
             ResetElectionTimer();
             sender.respondRPC();
         }
     }
 
+    public DateTime ElectionStartTime { get; set; }
+    public TimeSpan ElectionTimeout { get; set; }
+
     public void StartElectionTimer()
     {
+        ElectionStartTime = DateTime.Now;
+        ElectionTimeout = TimeSpan.FromMilliseconds(GetRandomElectionTimeout());
         int timeout = GetRandomElectionTimeout();
-        _electionTimer = new Timer(StartElection, null, timeout, Timeout.Infinite);
+        _electionTimer = new Timer(_ => StartElectionAsync(), null, timeout, Timeout.Infinite);
     }
 
     void ResetElectionTimer()
@@ -77,7 +89,7 @@ public class ServerNode : IServerNode
         _electionTimer?.Change(timeout, Timeout.Infinite);
     }
 
-    public void StartElection(object? state)
+    public async Task StartElectionAsync()
     {
         if (State == NodeState.Follower || State == NodeState.Candidate)
         {
@@ -86,51 +98,26 @@ public class ServerNode : IServerNode
             votedFor = Id;
             _votesReceived = 1;
 
-            foreach (var neighbor in _neighbors)
-            {
-                if (neighbor.RequestVote(this, Term))
-                {
-                    _votesReceived++;
-                }
-            }
+            var voteTasks = _neighbors.Select(n => n.RequestVoteAsync(this, Term));
+            var voteResults = await Task.WhenAll(voteTasks);
 
-            Thread.Sleep(500);
-            int majority = (_neighbors.Count + 1) / 2;
-            if (_votesReceived > majority)
-            {
-                BecomeLeader();
-            }
-        }
-    }
+            _votesReceived += voteResults.Count(v => v);
 
-    public bool RequestVote(ServerNode candidate, int term)
-    {
-        if (term > Term)
-        {
-            Term = term;
-            votedFor = candidate.Id;
-            _hasVoted = true;
-            return true;
-        }
-        else if (term == Term)
-        {
-            if (votedFor == null)
+            int majority = (_neighbors.Count / 2) + 1;
+            if (_votesReceived >= majority)
             {
-                votedFor = candidate.Id;
-                _hasVoted = true;
-                return true;
+                await BecomeLeaderAsync();
             }
             else
             {
-                return false;
+                StartElectionTimer();
             }
         }
-        return false;
     }
 
     public int GetRandomElectionTimeout()
     {
-        return _random.Next(150, 301);
+        return _random.Next(150, 301) * _timeoutMultiplier;
     }
 
     public void respondRPC()
@@ -138,42 +125,76 @@ public class ServerNode : IServerNode
         Console.WriteLine("Received RPC");
     }
 
-    public void BecomeLeader()
+    public async Task BecomeLeaderAsync()
     {
         State = NodeState.Leader;
         _isLeader = true;
-        _heartbeatTimer = new Timer(Append, null, 0, _intervalHeartbeat);
-        // AppendEntries(this, Term, new List<LogEntry>());
-    }
 
-    public void Append(object state)
-    {
-        if (_isLeader)
-        {
-            foreach (var neighbor in _neighbors)
-            {
-                neighbor.respondRPC();
-            }
-        }
+        // Send immediate heartbeat
+        var heartbeatTasks = _neighbors.Select(neighbor =>
+            neighbor.AppendEntries(this, Term, new List<LogEntry>())
+        );
+
+        await Task.WhenAll(heartbeatTasks);
     }
 
     public IServerNode GetCurrentLeader()
     {
-        return _currentLeader;
+        return _innerNode;
     }
-    public void AppendEntries(ServerNode leader, int term, List<LogEntry> entries)
+
+    public void SetNeighbors(List<IServerNode> neighbors)
     {
+        _neighbors.AddRange(neighbors);
+    }
+
+    public void StopSimulationLoop()
+    {
+        SimulationRunning = false;
+    }
+
+    public async Task<bool> RequestVoteAsync(IServerNode candidate, int term)
+    {
+        await Task.Delay(50);
+
+        if (term > Term)
+        {
+            Term = term;
+            votedFor = candidate.Id;
+            _hasVoted = true;
+            return true;
+        }
+
+        if (term == Term && string.IsNullOrEmpty(votedFor))
+        {
+            votedFor = candidate.Id;
+            _hasVoted = true;
+            return true;
+        }
+
+        return false;
+    }
+
+    public async Task AppendEntries(IServerNode leader, int term, List<LogEntry> entries)
+    {
+        await Task.Delay(10);
         if (term >= Term)
         {
             Term = term;
-            _currentLeader = leader;
+            _innerNode = leader;
             State = NodeState.Follower;
             ResetElectionTimer();
         }
     }
 
-    public void SetNeighbors(List<IServerNode> neighbors)
+    void IServerNode.StartSimulationLoop()
     {
-        _neighbors = neighbors;
+        SimulationRunning = true;
+        StartElectionTimer();
+    }
+
+    public void SetTimeoutMultiplier(int multiplier)
+    {
+        _timeoutMultiplier = multiplier;
     }
 }

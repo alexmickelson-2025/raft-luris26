@@ -4,29 +4,55 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Raft Node Simulation</h1>
 
-Welcome to your new app.
-<button @onclick="startSimulation">start</button>
+@if (!isRunning)
+{
+    <button class="btn btn-primary" @onclick="startSimulation">Start Simulation</button>
+}
+else
+{
+    <button class="btn btn-danger" @onclick="StopSimulation">Stop Simulation</button>
+}
+
+<div class="mt-3">
+    <label>
+        Network Delay: @FormatMilliseconds(networkDelay)
+        <input type="range" min="10" max="1000" step="10" @bind="networkDelay" />
+    </label>
+</div>
+<div class="mt-3">
+    <label>
+        Election Timeout Multiplier: timeoutMultiplier
+        <input type="range" min="1" max="10" step="1" @bind="timeoutMultiplier" />
+    </label>
+</div>
 
 @if (nodes != null)
 {
     <div class="row">
         @foreach (var node in nodes)
         {
-            <div class="col-4">
+            <div class="p-3 col-4">
                 <div class="border p-3 rounded-3">
-                    <h3>Node @node.Id</h3>
-                    <p>Status: @node.State</p>
-                    <p>Term: @node.Term</p>
+                    <p><strong>Node:</strong> @node.Id</p>
+                    <p><strong>Status:</strong> <span class="@GetStateClass(node)">@node.State</span></p>
+                    <p><strong>Term:</strong> @node.Term</p>
+                    <p><strong>Leader:</strong> @(node.GetCurrentLeader()?.Id ?? "None")</p>
+                    <div class="progress mt-2" role="progressbar">
+                        <div class="progress-bar" role="progressbar" style="width: @(CalculateTimeoutProgress(node))%" aria-valuenow="@(CalculateTimeoutProgress(node))" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
                 </div>
             </div>
         }
     </div>
 }
-
 @code {
-    List<SimulationNode>? nodes;
+    List<SimulationNode>? nodes = new();
+    private bool isRunning = false;
+    private Timer? timer;
+    private int networkDelay = 200;
+    private int timeoutMultiplier = 1;
 
     void startSimulation()
     {
@@ -34,13 +60,63 @@ Welcome to your new app.
         var node2 = new ServerNode();
         var node3 = new ServerNode();
 
-        var SimulationNode = new SimulationNode(node1);
+        node1.SetNeighbors(new List<IServerNode> { node2, node3 });
+        node2.SetNeighbors(new List<IServerNode> { node1, node3 });
+        node3.SetNeighbors(new List<IServerNode> { node1, node2 });
+
+        var simulationNode1 = new SimulationNode(node1);
         var simulationNode2 = new SimulationNode(node2);
         var simulationNode3 = new SimulationNode(node3);
 
+        nodes = new List<SimulationNode> { simulationNode1, simulationNode2, simulationNode3 };
 
-        nodes = [simulationNode2, simulationNode3, SimulationNode];
+        foreach (var node in nodes)
+        {
+            node.InnerNode.SetTimeoutMultiplier(timeoutMultiplier);
+            node.StartSimulationLoop();
+        }
+
+        isRunning = true;
+
+        timer = new Timer(_ =>
+        {
+            InvokeAsync(StateHasChanged);
+        }, null, 0, 200);
         StateHasChanged();
     }
 
+    void StopSimulation()
+    {
+        foreach (var node in nodes)
+        {
+            node.StopSimulationLoop();
+        }
+        isRunning = false;
+        timer?.Dispose();
+    }
+
+    int CalculateTimeoutProgress(SimulationNode node)
+    {
+        var elapsed = DateTime.Now - node.InnerNode.ElectionStartTime;
+        var timeout = node.InnerNode.ElectionTimeout;
+        return (int)(elapsed.TotalMilliseconds / timeout.TotalMilliseconds * 100);
+    }
+
+    string GetStateClass(SimulationNode node)
+    {
+        return node.State switch
+        {
+            NodeState.Leader => "text-primary",
+            NodeState.Candidate => "text-warning",
+            NodeState.Follower => "text-secondary",
+            _ => ""
+        };
+    }
+
+    string FormatMilliseconds(int milliseconds) => $"{milliseconds} ms";
+
+    public void Dispose()
+    {
+        StopSimulation();
+    }
 }

@@ -2,16 +2,27 @@ namespace classlibrary;
 
 public interface IServerNode
 {
-    public List<IServerNode> _neighbors { get; set; }
     public string Id { get; set; }
-    public NodeState State { get; set; }
-    public IServerNode _currentLeader { get; set; }
     public int Term { get; set; }
-    void requestRPC(IServerNode sender, string rpcType); //sent
-    void Append(object state);
-    void AppendEntries(ServerNode leader, int term, List<LogEntry> entries);
+    public string CurrentLiderID { get; set; } //id
+    public bool SimulationRunning { get; set; }
+    public DateTime ElectionStartTime { get; set; }
+    public TimeSpan ElectionTimeout { get; set; }
+    public List<IServerNode> _neighbors { get; set; }
+    public NodeState State { get; set; }
+    public IServerNode InnerNode { get; set; }
+    object CancellationTokenSource { get; }
+
+    public IEnumerable<IServerNode> GetNeighbors() => _neighbors;
+    Task requestRPC(IServerNode sender, string rpcType); //sent
+    Task AppendEntries(IServerNode leader, int term, List<LogEntry> entries);
 
     void respondRPC(); //receive
-    bool RequestVote(ServerNode candidate, int term);
+    Task<bool> RequestVoteAsync(IServerNode candidate, int term);
     void SetNeighbors(List<IServerNode> neighbors);
+    public IServerNode GetCurrentLeader();
+
+    // Simulation control
+    void StartSimulationLoop();
+    void StopSimulationLoop();
 }
