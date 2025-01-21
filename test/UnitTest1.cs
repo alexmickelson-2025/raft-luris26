@@ -389,4 +389,30 @@ public class UnitTest1
     //     follower1.Received(1).AppendEntries(candidate, candidate.Term, Arg.Any<List<LogEntry>>());
     //     follower2.Received(1).AppendEntries(candidate, candidate.Term, Arg.Any<List<LogEntry>>());
     // }
+
+    //1.a cluster of five nodes where no leader
+    [Fact]
+    public async Task NodeTimesOutAndInitiatesElection()
+    {
+        // Arrange
+        var node1 = new ServerNode();
+        var node2 = Substitute.For<IServerNode>();
+        var node3 = Substitute.For<IServerNode>();
+        var node4 = Substitute.For<IServerNode>();
+        var node5 = Substitute.For<IServerNode>();
+
+        node1.SetNeighbors(new List<IServerNode> { node2, node3, node4, node5 });
+        node2.SetNeighbors(new List<IServerNode> { node1, node3, node4, node5 });
+        node3.SetNeighbors(new List<IServerNode> { node1, node2, node4, node5 });
+        node4.SetNeighbors(new List<IServerNode> { node1, node2, node3, node5 });
+        node5.SetNeighbors(new List<IServerNode> { node1, node2, node3, node4 });
+
+        // Act
+        await Task.Delay(350);
+        await node1.StartElectionAsync();
+
+        // Assert
+        Assert.Equal(NodeState.Candidate, node1.State);
+        Assert.Equal(1, node1.Term);
+    }
 }
