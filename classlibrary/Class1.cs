@@ -34,6 +34,7 @@ public class ServerNode : IServerNode
         _isLeader = false;
         _random = new Random();
         Id = Guid.NewGuid().ToString();
+        Log = new List<LogEntry>();
     }
 
     public ServerNode(bool vote, List<IServerNode> neighbors = null, int heartbeatInterval = 50, string id = null)

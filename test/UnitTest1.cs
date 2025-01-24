@@ -455,10 +455,35 @@ public class UnitTest1
     }
 
     // //2 when a leader receives a command from the client, it is appended to its log
-    // [Fact]
-    // public async Task LeaderReceivesCommandFromClientAppendLog()
-    // {
-    //     var trueValue = true;
-    //     Assert.True(trueValue);
-    // }
+    [Fact]
+    public async Task LeaderAppendsCommandToLog()
+    {
+        // Arrange
+        var leader = new ServerNode();
+        leader.State = NodeState.Leader;
+
+        var logEntry = new LogEntry(index: 1, term: leader.Term, command: "Set x = 10");
+
+        // Act
+        await leader.ReceiveClientCommandAsync(logEntry);
+
+        // Assert
+        Assert.Contains(logEntry, leader.Log);
+        Assert.Equal(1, leader.Log.Count);
+        Assert.Equal("Set x = 10", leader.Log[0].Command);
+    }
+
+    //3. when a node is new, its log is empty
+    [Fact]
+    public void NewNodeLogIsEmpty()
+    {
+        // Arrange
+        var newNode = new ServerNode();
+
+        // Assert
+        Assert.NotNull(newNode.Log);
+        Assert.Empty(newNode.Log);
+    }
+    //4. when a leader wins an election, it initializes the nextIndex for each follower to the index just after the last one it its log
+    
 }
