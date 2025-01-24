@@ -484,6 +484,55 @@ public class UnitTest1
         Assert.NotNull(newNode.Log);
         Assert.Empty(newNode.Log);
     }
+
     //4. when a leader wins an election, it initializes the nextIndex for each follower to the index just after the last one it its log
-    
+    [Fact]
+    public async Task LeaderInitializesNextIndexForFollowers()
+    {
+        // Arrange
+        var leader = new ServerNode();
+        var follower1 = Substitute.For<IServerNode>();
+        follower1.Id.Returns("Follower1");
+        var follower2 = Substitute.For<IServerNode>();
+        follower2.Id.Returns("Follower2");
+
+        leader.SetNeighbors(new List<IServerNode> { follower1, follower2 });
+        follower1.SetNeighbors(new List<IServerNode> { leader, follower2 });
+        follower2.SetNeighbors(new List<IServerNode> { leader, follower1 });
+
+        // Act
+        await leader.BecomeLeaderAsync();
+
+        // Assert
+        int expectedNextIndex = leader.Log.Count + 1;
+        Assert.Equal(expectedNextIndex, leader.NextIndex[follower1.Id]);
+        Assert.Equal(expectedNextIndex, leader.NextIndex[follower2.Id]);
+    }
+    //5.leaders maintain an "nextIndex" for each follower that is the index of the next log entry the leader will send to that follower
+    [Fact]
+    public async Task LeaderMaintainsNextIndexForEachFollower()
+    {
+        // Arrange
+        var follower1 = Substitute.For<IServerNode>();
+        follower1.Id.Returns("Follower1");
+
+        var follower2 = Substitute.For<IServerNode>();
+        follower2.Id.Returns("Follower2");
+
+        var neighbors = new List<IServerNode> { follower1, follower2 };
+
+        var leader = new ServerNode(true, neighbors);
+
+        await leader.BecomeLeaderAsync();
+
+        // Act
+        var newLogEntry = new LogEntry(index: 1, term: leader.Term, command: "Set x = 10");
+        leader.Log.Add(newLogEntry);
+
+        await follower1.AppendEntries(leader, leader.Term, new List<LogEntry> { newLogEntry });
+        await leader.UpdateNextIndexAsync(follower1.Id, leader.Log.Count);
+
+        // Assert
+        Assert.Equal(leader.Log.Count, leader.NextIndex[follower1.Id]);
+    }
 }

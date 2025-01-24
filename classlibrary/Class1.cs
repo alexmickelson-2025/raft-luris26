@@ -23,6 +23,7 @@ public class ServerNode : IServerNode
     public IServerNode _innerNode { get; set; }
     public List<LogEntry> Log { get; set; }
     private int _timeoutMultiplier = 1;
+    public Dictionary<string, int> NextIndex { get; set; } = new();
     public IServerNode InnerNode { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
     public object CancellationTokenSource => throw new NotImplementedException();
@@ -134,6 +135,16 @@ public class ServerNode : IServerNode
         State = NodeState.Leader;
         _isLeader = true;
 
+        NextIndex = new Dictionary<string, int>();
+        int leaderLastLogIndex = Log.Count;
+
+        foreach (var neighbor in _neighbors)
+        {
+            if (!string.IsNullOrEmpty(neighbor.Id))
+            {
+                NextIndex[neighbor.Id] = Log.Count + 1;
+            }
+        }
         var heartbeatTasks = _neighbors.Select(neighbor =>
             neighbor.AppendEntries(this, Term, new List<LogEntry>()) // esto es lo que envio
         );
@@ -186,7 +197,16 @@ public class ServerNode : IServerNode
             Term = term;
             foreach (var entry in entries)
             {
-                Log.Add(entry);
+                if (entry.Index > Log.Count)
+                {
+                    Log.Add(entry);
+                }
+                else if (Log[entry.Index - 1].Term != entry.Term)
+                {
+                    // Conflict detected, remove the existing entry and all that follow it
+                    Log.RemoveRange(entry.Index - 1, Log.Count - (entry.Index - 1));
+                    Log.Add(entry);
+                }
             }
             _innerNode = leader;
             State = NodeState.Follower;
@@ -216,5 +236,16 @@ public class ServerNode : IServerNode
             neighbor.AppendEntries(this, Term, new List<LogEntry> { command })
         );
         await Task.WhenAll(appendTasks);
+    }
+
+    public async Task UpdateNextIndexAsync(string followerId, int nextIndex)
+    {
+        if (!NextIndex.ContainsKey(followerId))
+        {
+            throw new InvalidOperationException($"Follower {followerId} not found.");
+        }
+
+        NextIndex[followerId] = nextIndex;
+        await Task.CompletedTask;
     }
 }

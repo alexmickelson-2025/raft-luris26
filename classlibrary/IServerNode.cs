@@ -15,12 +15,14 @@ public interface IServerNode
 
     public IEnumerable<IServerNode> GetNeighbors() => _neighbors;
     public List<LogEntry> Log { get; set; }
+    public Dictionary<string, int> NextIndex { get; set; }
     Task requestRPC(IServerNode sender, string rpcType); //sent
     Task AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries);
     Task ReceiveClientCommandAsync(LogEntry command);
     void respondRPC(); //receive
     Task<bool> RequestVoteAsync(IServerNode candidate, int term);
     void SetNeighbors(List<IServerNode> neighbors);
+    public Task UpdateNextIndexAsync(string followerId, int nextIndex);
     public IServerNode GetCurrentLeader();
 
     // Simulation control
