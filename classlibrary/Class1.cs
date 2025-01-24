@@ -21,6 +21,7 @@ public class ServerNode : IServerNode
     private Timer? _electionTimer { get; set; }
     public NodeState State { get; set; }
     public IServerNode _innerNode { get; set; }
+    public List<LogEntry> Log { get; set; }
     private int _timeoutMultiplier = 1;
     public IServerNode InnerNode { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
@@ -48,6 +49,7 @@ public class ServerNode : IServerNode
         _electionTimer = null!;
         _innerNode = null!;
         _random = new Random();
+        Log = new List<LogEntry>();
 
         StartElectionTimer();
     }
@@ -74,6 +76,7 @@ public class ServerNode : IServerNode
 
     public DateTime ElectionStartTime { get; set; }
     public TimeSpan ElectionTimeout { get; set; }
+    public List<LogEntry> entries { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
     public void StartElectionTimer()
     {
@@ -130,9 +133,8 @@ public class ServerNode : IServerNode
         State = NodeState.Leader;
         _isLeader = true;
 
-        // Send immediate heartbeat
         var heartbeatTasks = _neighbors.Select(neighbor =>
-            neighbor.AppendEntries(this, Term)
+            neighbor.AppendEntries(this, Term, new List<LogEntry>()) // esto es lo que envio
         );
 
         await Task.WhenAll(heartbeatTasks);
@@ -175,12 +177,16 @@ public class ServerNode : IServerNode
         return false;
     }
 
-    public async Task AppendEntries(IServerNode leader, int term)
+    public async Task AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries)
     {
         await Task.Delay(10);
         if (term >= Term)
         {
             Term = term;
+            foreach (var entry in entries)
+            {
+                Log.Add(entry);
+            }
             _innerNode = leader;
             State = NodeState.Follower;
             ResetElectionTimer();
@@ -196,5 +202,18 @@ public class ServerNode : IServerNode
     public void SetTimeoutMultiplier(int multiplier)
     {
         _timeoutMultiplier = multiplier;
+    }
+
+    public async Task ReceiveClientCommandAsync(LogEntry command)
+    {
+        if (State != NodeState.Leader)
+        {
+            throw new InvalidOperationException("Only the leader can process client commands.");
+        }
+        Log.Add(command);
+        var appendTasks = _neighbors.Select(neighbor =>
+            neighbor.AppendEntries(this, Term, new List<LogEntry> { command })
+        );
+        await Task.WhenAll(appendTasks);
     }
 }

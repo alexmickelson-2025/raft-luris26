@@ -49,6 +49,7 @@ public class SimulationNode : IServerNode
 
     public DateTime ElectionStartTime { get => ((IServerNode)InnerNode).ElectionStartTime; set => ((IServerNode)InnerNode).ElectionStartTime = value; }
     public TimeSpan ElectionTimeout { get => ((IServerNode)InnerNode).ElectionTimeout; set => ((IServerNode)InnerNode).ElectionTimeout = value; }
+    public List<LogEntry> Log { get => ((IServerNode)InnerNode).Log; set => ((IServerNode)InnerNode).Log = value; }
     IServerNode IServerNode.InnerNode
     {
         get => throw new NotImplementedException();
@@ -57,17 +58,32 @@ public class SimulationNode : IServerNode
 
     public void AppendEntries(ServerNode leader, int term)
     {
-        ((IServerNode)InnerNode).AppendEntries(leader, term);
+        ((IServerNode)InnerNode).AppendEntries(leader, term, new List<LogEntry>());
     }
 
     public Task AppendEntries(IServerNode leader, int term)
     {
-        return ((IServerNode)InnerNode).AppendEntries(leader, term);
+        return ((IServerNode)InnerNode).AppendEntries(leader, term, new List<LogEntry>());
+    }
+
+    public Task AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries)
+    {
+        return ((IServerNode)InnerNode).AppendEntries(leader, term, logEntries);
     }
 
     public IServerNode GetCurrentLeader()
     {
         return ((IServerNode)InnerNode).GetCurrentLeader();
+    }
+
+    public Task ReceiveClientCommandAsync(List<LogEntry> logs, LogEntry command)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task ReceiveClientCommandAsync(LogEntry command)
+    {
+        return ((IServerNode)InnerNode).ReceiveClientCommandAsync(command);
     }
 
     public void requestRPC(ServerNode sender, string rpcType)

@@ -14,9 +14,10 @@ public interface IServerNode
     object CancellationTokenSource { get; }
 
     public IEnumerable<IServerNode> GetNeighbors() => _neighbors;
+    public List<LogEntry> Log { get; set; }
     Task requestRPC(IServerNode sender, string rpcType); //sent
-    Task AppendEntries(IServerNode leader, int term);
-
+    Task AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries);
+    Task ReceiveClientCommandAsync(LogEntry command);
     void respondRPC(); //receive
     Task<bool> RequestVoteAsync(IServerNode candidate, int term);
     void SetNeighbors(List<IServerNode> neighbors);
