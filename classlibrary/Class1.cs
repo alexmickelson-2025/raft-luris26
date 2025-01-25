@@ -192,34 +192,68 @@ public class ServerNode : IServerNode
     public async Task AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries, int leaderCommitIndex)
     {
         await Task.Delay(10);
-        if (term >= Term)
-        {
-            Term = term;
-            foreach (var entry in logEntries)
-            {
-                if (entry.Index > Log.Count)
-                {
-                    Log.Add(entry);
-                }
-                else if (Log[entry.Index - 1].Term != entry.Term)
-                {
-                    Log.RemoveRange(entry.Index - 1, Log.Count - (entry.Index - 1));
-                    Log.Add(entry);
-                }
-                if (leaderCommitIndex > CommitIndex)
-                {
-                    CommitIndex = Math.Min(leaderCommitIndex, Log.Count);
 
-                    for (int i = LastApplied + 1; i <= CommitIndex; i++)
-                    {
-                        ApplyLogEntry(Log[i - 1]);
-                        LastApplied = i;
-                    }
-                }
+        if (term < Term) return;
+
+        if (logEntries.Count > 0 && !ValidateLogConsistency(logEntries))
+        {
+            Console.WriteLine("Heartbeat rejected due to log mismatch.");
+            return;
+        }
+
+        UpdateTermAndLeader(term, leader);
+        ProcessLogEntries(logEntries);
+        UpdateCommitIndexAndApplyEntries(leaderCommitIndex);
+        ResetElectionTimer();
+    }
+
+    private bool ValidateLogConsistency(List<LogEntry> logEntries)
+    {
+        var prevLogIndex = logEntries[0].Index - 1;
+        var prevLogTerm = logEntries[0].Term;
+
+        if (prevLogIndex > 0)
+        {
+            return prevLogIndex <= Log.Count && Log[prevLogIndex - 1].Term == prevLogTerm;
+        }
+
+        return true;
+    }
+
+    private void UpdateTermAndLeader(int term, IServerNode leader)
+    {
+        Term = term;
+        _innerNode = leader;
+        State = NodeState.Follower;
+    }
+
+    private void ProcessLogEntries(List<LogEntry> logEntries)
+    {
+        foreach (var entry in logEntries)
+        {
+            if (entry.Index > Log.Count)
+            {
+                Log.Add(entry);
             }
-            _innerNode = leader;
-            State = NodeState.Follower;
-            ResetElectionTimer();
+            else if (Log[entry.Index - 1].Term != entry.Term)
+            {
+                Log.RemoveRange(entry.Index - 1, Log.Count - (entry.Index - 1));
+                Log.Add(entry);
+            }
+        }
+    }
+
+    private void UpdateCommitIndexAndApplyEntries(int leaderCommitIndex)
+    {
+        if (leaderCommitIndex > CommitIndex)
+        {
+            CommitIndex = Math.Min(leaderCommitIndex, Log.Count);
+
+            for (int i = LastApplied + 1; i <= CommitIndex; i++)
+            {
+                ApplyLogEntry(Log[i - 1]);
+                LastApplied = i;
+            }
         }
     }
 
@@ -293,5 +327,51 @@ public class ServerNode : IServerNode
         }
 
         await Task.CompletedTask;
+    }
+
+    public async Task<(int Term, int LastLogIndex)> RespondToAppendEntriesAsync()
+    {
+        await Task.Delay(10);
+        int lastLogIndex = Log.Count > 0 ? Log[^1].Index : 0;
+        return (Term, lastLogIndex);
+    }
+
+    public async Task<bool> ConfirmReplicationAsync(LogEntry logEntry, Action<string> clientCallback)
+    {
+        int acknowledgements = 1;
+        var replicationTasks = _neighbors.Select(async neighbor =>
+        {
+            try
+            {
+                await neighbor.AppendEntries(this, Term, new List<LogEntry> { logEntry }, CommitIndex);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        });
+
+        var results = await Task.WhenAll(replicationTasks);
+        acknowledgements += results.Count(success => success);
+
+        int majority = (_neighbors.Count / 2) + 1;
+        if (acknowledgements >= majority)
+        {
+            clientCallback?.Invoke($"Log entry {logEntry.Index} comfirt.");
+            return true;
+        }
+
+        return false;
+    }
+
+    public void ApplyCommittedLogs()
+    {
+        while (CommitIndex > LastApplied)
+        {
+            var entryToApply = Log[LastApplied];
+            ApplyLogEntry(entryToApply);
+            LastApplied++;
+        }
     }
 }

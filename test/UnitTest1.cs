@@ -8,7 +8,7 @@ namespace test;
 
 public class UnitTest1
 {
-    //1
+    // 1
     // [Fact]
     // public async Task LeaderSendsHeartbeatsToAllNeighborsWithin50ms()
     // {
@@ -25,291 +25,291 @@ public class UnitTest1
     // }
 
     // 2
-    // [Fact]
-    // public async Task NodeRemembersCurrentLeader()
-    // {
-    //     var leaderNode = Substitute.For<IServerNode>();
-    //     var followerNode = new ServerNode(false);
+    [Fact]
+    public async Task NodeRemembersCurrentLeader()
+    {
+        var leaderNode = Substitute.For<IServerNode>();
+        var followerNode = new ServerNode(false);
 
-    //     await followerNode.requestRPC(leaderNode, "AppendEntries");
+        await followerNode.requestRPC(leaderNode, "AppendEntries");
 
-    //     Assert.Equal(leaderNode, followerNode.GetCurrentLeader());
-    // }
+        Assert.Equal(leaderNode, followerNode.GetCurrentLeader());
+    }
 
-    // // 3
-    // [Fact]
-    // public void NewNodeStartsAsFollower()
-    // {
-    //     var newNode = new ServerNode(true);
+    // 3
+    [Fact]
+    public void NewNodeStartsAsFollower()
+    {
+        var newNode = new ServerNode(true);
 
-    //     Assert.Equal(NodeState.Follower, newNode.State);
-    // }
+        Assert.Equal(NodeState.Follower, newNode.State);
+    }
 
-    // // 4
-    // [Fact]
-    // public void FollowerStartsElectionAfterTimeout()
-    // {
-    //     var follower = new ServerNode(true);
+    // 4
+    [Fact]
+    public void FollowerStartsElectionAfterTimeout()
+    {
+        var follower = new ServerNode(true);
 
-    //     Thread.Sleep(350);
+        Thread.Sleep(350);
 
-    //     Assert.Equal(NodeState.Leader, follower.State);
-    // }
+        Assert.Equal(NodeState.Leader, follower.State);
+    }
 
-    // //5.
-    // [Fact]
-    // public void ElectionTimeoutIsRandomBetween150And300ms()
-    // {
-    //     // Arrange
-    //     var node = new ServerNode(true);
-    //     var timeouts = new List<int>();
+    //5.
+    [Fact]
+    public void ElectionTimeoutIsRandomBetween150And300ms()
+    {
+        // Arrange
+        var node = new ServerNode(true);
+        var timeouts = new List<int>();
 
-    //     // Act
-    //     for (int i = 0; i < 1000; i++)
-    //     {
-    //         int timeout = node.GetRandomElectionTimeout();
-    //         timeouts.Add(timeout);
-    //     }
+        // Act
+        for (int i = 0; i < 1000; i++)
+        {
+            int timeout = node.GetRandomElectionTimeout();
+            timeouts.Add(timeout);
+        }
 
-    //     // Assert
-    //     Assert.All(timeouts, t => Assert.InRange(t, 150, 300));
-    //     var uniqueValues = timeouts.Distinct().ToList();
-    //     Assert.True(uniqueValues.Count > 10, "Randomness check failed: Not enough unique values.");
+        // Assert
+        Assert.All(timeouts, t => Assert.InRange(t, 150, 300));
+        var uniqueValues = timeouts.Distinct().ToList();
+        Assert.True(uniqueValues.Count > 10, "Randomness check failed: Not enough unique values.");
 
-    //     var bucketCounts = new int[3];
-    //     foreach (var timeout in timeouts)
-    //     {
-    //         if (timeout < 200) bucketCounts[0]++;
-    //         else if (timeout < 250)
-    //             bucketCounts[1]++;
-    //         else
-    //             bucketCounts[2]++;
-    //     }
-    //     Assert.All(bucketCounts, count => Assert.InRange(count, 200, 400));
-    // }
+        var bucketCounts = new int[3];
+        foreach (var timeout in timeouts)
+        {
+            if (timeout < 200) bucketCounts[0]++;
+            else if (timeout < 250)
+                bucketCounts[1]++;
+            else
+                bucketCounts[2]++;
+        }
+        Assert.All(bucketCounts, count => Assert.InRange(count, 200, 400));
+    }
 
-    // //6
-    // [Fact]
-    // public void ElectionIncrementsTerm()
-    // {
-    //     var node = new ServerNode(true);
+    //6
+    [Fact]
+    public void ElectionIncrementsTerm()
+    {
+        var node = new ServerNode(true);
 
-    //     int initialTerm = node.Term;
-    //     Thread.Sleep(350);
-    //     int newTerm = node.Term;
+        int initialTerm = node.Term;
+        Thread.Sleep(350);
+        int newTerm = node.Term;
 
-    //     Assert.Equal(initialTerm + 1, newTerm);
-    // }
+        Assert.Equal(initialTerm + 1, newTerm);
+    }
 
-    // // //test to random ...
-    // // //7. dfghjkm
-    // [Fact]
-    // public async Task FollowerResetsElectionTimerOnAppendEntriesAsync()
-    // {
-    //     // Arrange
-    //     var follower = new ServerNode(true);
-    //     var leader = Substitute.For<IServerNode>();
-    //     leader.Term = 1;
+    // //test to random ...
+    // //7. dfghjkm
+    [Fact]
+    public async Task FollowerResetsElectionTimerOnAppendEntriesAsync()
+    {
+        // Arrange
+        var follower = new ServerNode(true);
+        var leader = Substitute.For<IServerNode>();
+        leader.Term = 1;
 
-    //     // Act
-    //     await follower.requestRPC(leader, "AppendEntries");
+        // Act
+        await follower.requestRPC(leader, "AppendEntries");
 
-    //     // Assert
-    //     Assert.Equal(NodeState.Follower, follower.State);
-    //     Assert.Equal(leader, follower.GetCurrentLeader());
-    // }
+        // Assert
+        Assert.Equal(NodeState.Follower, follower.State);
+        Assert.Equal(leader, follower.GetCurrentLeader());
+    }
 
-    // // //8
-    // [Fact]
-    // public async Task CandidateBecomesLeaderWithMajorityVotesAsync()
-    // {
-    //     // Arrange
-    //     var neighbor1 = Substitute.For<IServerNode>();
-    //     var neighbor2 = Substitute.For<IServerNode>();
-    //     var neighbor3 = Substitute.For<IServerNode>();
+    // //8
+    [Fact]
+    public async Task CandidateBecomesLeaderWithMajorityVotesAsync()
+    {
+        // Arrange
+        var neighbor1 = Substitute.For<IServerNode>();
+        var neighbor2 = Substitute.For<IServerNode>();
+        var neighbor3 = Substitute.For<IServerNode>();
 
-    //     neighbor1.RequestVoteAsync(Arg.Any<IServerNode>(), Arg.Any<int>()).Returns(Task.FromResult(true));
-    //     neighbor2.RequestVoteAsync(Arg.Any<IServerNode>(), Arg.Any<int>()).Returns(Task.FromResult(true));
-    //     neighbor3.RequestVoteAsync(Arg.Any<IServerNode>(), Arg.Any<int>()).Returns(Task.FromResult(false));
+        neighbor1.RequestVoteAsync(Arg.Any<IServerNode>(), Arg.Any<int>()).Returns(Task.FromResult(true));
+        neighbor2.RequestVoteAsync(Arg.Any<IServerNode>(), Arg.Any<int>()).Returns(Task.FromResult(true));
+        neighbor3.RequestVoteAsync(Arg.Any<IServerNode>(), Arg.Any<int>()).Returns(Task.FromResult(false));
 
-    //     var neighbors = new List<IServerNode> { neighbor1, neighbor2, neighbor3 };
-    //     var candidate = new ServerNode(true, neighbors);
+        var neighbors = new List<IServerNode> { neighbor1, neighbor2, neighbor3 };
+        var candidate = new ServerNode(true, neighbors);
 
-    //     // Act
-    //     await candidate.StartElectionAsync();
+        // Act
+        await candidate.StartElectionAsync();
 
-    //     // Assert
-    //     Assert.Equal(NodeState.Leader, candidate.State);
-    // }
+        // Assert
+        Assert.Equal(NodeState.Leader, candidate.State);
+    }
 
-    // // //9.
-    // [Fact]
-    // public async Task CandidateBecomesLeaderWithMajorityVotesDespiteUnresponsiveNode()
-    // {
-    //     // Arrange
-    //     var m1 = Substitute.For<IServerNode>();
-    //     var m2 = Substitute.For<IServerNode>();
-    //     var unresponsiveNode = Substitute.For<IServerNode>();
+    // //9.
+    [Fact]
+    public async Task CandidateBecomesLeaderWithMajorityVotesDespiteUnresponsiveNode()
+    {
+        // Arrange
+        var m1 = Substitute.For<IServerNode>();
+        var m2 = Substitute.For<IServerNode>();
+        var unresponsiveNode = Substitute.For<IServerNode>();
 
-    //     m1.RequestVoteAsync(Arg.Any<IServerNode>(), Arg.Any<int>()).Returns(Task.FromResult(true));
-    //     m2.RequestVoteAsync(Arg.Any<IServerNode>(), Arg.Any<int>()).Returns(Task.FromResult(true));
-    //     unresponsiveNode.RequestVoteAsync(Arg.Any<IServerNode>(), Arg.Any<int>()).Returns(Task.FromResult(false));
+        m1.RequestVoteAsync(Arg.Any<IServerNode>(), Arg.Any<int>()).Returns(Task.FromResult(true));
+        m2.RequestVoteAsync(Arg.Any<IServerNode>(), Arg.Any<int>()).Returns(Task.FromResult(true));
+        unresponsiveNode.RequestVoteAsync(Arg.Any<IServerNode>(), Arg.Any<int>()).Returns(Task.FromResult(false));
 
-    //     var neighbors = new List<IServerNode> { m1, m2, unresponsiveNode };
-    //     var candidate = new ServerNode(true, neighbors);
+        var neighbors = new List<IServerNode> { m1, m2, unresponsiveNode };
+        var candidate = new ServerNode(true, neighbors);
 
-    //     // Act
-    //     await Task.Delay(350);
+        // Act
+        await Task.Delay(350);
 
-    //     // Assert
-    //     Assert.Equal(NodeState.Leader, candidate.State);
-    // }
-
-
-    // // // //10
-
-    // [Fact]
-    // public async Task FollowerRespondYesToRequestVoteWithHigherTerm()
-    // {
-    //     // Arrange
-    //     var follower = Substitute.For<IServerNode>();
-    //     follower.Term.Returns(1);
-    //     follower.When(x => x.Term = Arg.Any<int>()).Do(call => { follower.Term.Returns(call.Arg<int>()); });
-
-    //     var candidate = Substitute.For<IServerNode>();
-    //     candidate.Id.Returns("candidate1");
-
-    //     // RequestVoteAsync
-    //     follower
-    //         .RequestVoteAsync(candidate, Arg.Any<int>())
-    //         .Returns(async call =>
-    //         {
-    //             int term = call.ArgAt<int>(1);
-    //             if (term >= follower.Term)
-    //             {
-    //                 follower.Term = term;
-    //                 return true;
-    //             }
-    //             return false;
-    //         });
-
-    //     // Act
-    //     bool voted = await follower.RequestVoteAsync(candidate, 2);
-
-    //     // Assert
-    //     Assert.True(voted);
-    //     Assert.Equal(2, follower.Term);
-    // }
-
-    // // //11
-    // [Fact]
-    // public async Task CandidateVotesForItself()
-    // {
-    //     // Arrange
-    //     var candidate = new ServerNode();
-
-    //     // Act
-    //     await candidate.StartElectionAsync();
-
-    //     // Assert
-    //     Assert.Equal(candidate.Id, candidate.votedFor);
-    //     Assert.Equal(1, candidate._votesReceived);
-    // }
-
-    // // //12
-    // [Fact]
-    // public async Task CandidateBecomesFollowerUponReceivingAppendEntriesWithLaterTerm()
-    // {
-    //     // Arrange
-    //     var candidate = Substitute.For<IServerNode>();
-    //     candidate.State = NodeState.Candidate;
-    //     candidate.Term = 5;
-    //     candidate.GetCurrentLeader().Returns((IServerNode)null);
-
-    //     var leader = Substitute.For<IServerNode>();
-    //     leader.Term = 6;
-    //     leader.Id.Returns("leader1");
-
-    //     candidate.When(c => c.requestRPC(leader, "AppendEntries"))
-    //              .Do(_ =>
-    //              {
-    //                  candidate.Term = leader.Term;
-    //                  candidate.State = NodeState.Follower;
-    //                  candidate.GetCurrentLeader().Returns(leader);
-    //              });
-
-    //     // Act
-    //     await candidate.requestRPC(leader, "AppendEntries");
-
-    //     // Assert
-    //     Assert.Equal(NodeState.Follower, candidate.State);
-    //     Assert.Equal(6, candidate.Term);
-    //     Assert.Equal(leader, candidate.GetCurrentLeader());
-    // }
+        // Assert
+        Assert.Equal(NodeState.Leader, candidate.State);
+    }
 
 
-    // // //13
-    // [Fact]
-    // public async Task CandidateBecomesFollowerUponReceivingAppendEntriesWithEqualTerm()
-    // {
-    //     // Arrange
-    //     var candidate = new ServerNode();
-    //     candidate.State = NodeState.Candidate;
-    //     candidate.Term = 5;
+    // // //10
 
-    //     var leader = new ServerNode();
-    //     leader.Term = 5;
+    [Fact]
+    public async Task FollowerRespondYesToRequestVoteWithHigherTerm()
+    {
+        // Arrange
+        var follower = Substitute.For<IServerNode>();
+        follower.Term.Returns(1);
+        follower.When(x => x.Term = Arg.Any<int>()).Do(call => { follower.Term.Returns(call.Arg<int>()); });
 
-    //     // Act
-    //     await candidate.requestRPC(leader, "AppendEntries");
+        var candidate = Substitute.For<IServerNode>();
+        candidate.Id.Returns("candidate1");
 
-    //     // Assert
-    //     Assert.Equal(NodeState.Follower, candidate.State);
-    //     Assert.Equal(5, candidate.Term);
-    //     Assert.Equal(leader, candidate.GetCurrentLeader());
-    // }
+        // RequestVoteAsync
+        follower
+            .RequestVoteAsync(candidate, Arg.Any<int>())
+            .Returns(async call =>
+            {
+                int term = call.ArgAt<int>(1);
+                if (term >= follower.Term)
+                {
+                    follower.Term = term;
+                    return true;
+                }
+                return false;
+            });
 
-    // // //14
-    // [Fact]
-    // public async Task NodeDeniesSecondVoteRequestForSameTerm()
-    // {
-    //     // Arrange
-    //     var node = new ServerNode();
-    //     node.Term = 5;
+        // Act
+        bool voted = await follower.RequestVoteAsync(candidate, 2);
 
-    //     var candidate1 = new ServerNode();
-    //     var candidate2 = new ServerNode();
+        // Assert
+        Assert.True(voted);
+        Assert.Equal(2, follower.Term);
+    }
 
-    //     // Act
-    //     bool firstVote = await node.RequestVoteAsync(candidate1, 5);
-    //     bool secondVote = await node.RequestVoteAsync(candidate2, 5);
+    // //11
+    [Fact]
+    public async Task CandidateVotesForItself()
+    {
+        // Arrange
+        var candidate = new ServerNode();
 
-    //     // Assert
-    //     Assert.True(firstVote);
-    //     Assert.False(secondVote);
-    // }
+        // Act
+        await candidate.StartElectionAsync();
 
-    // // //15
-    // [Fact]
-    // public async Task NodeVotesForFutureTerm()
-    // {
-    //     // Arrange
-    //     var node = new ServerNode();
-    //     node.Term = 5;
-    //     node.votedFor = "some-other-node";
+        // Assert
+        Assert.Equal(candidate.Id, candidate.votedFor);
+        Assert.Equal(1, candidate._votesReceived);
+    }
 
-    //     var futureCandidate = new ServerNode();
+    // //12
+    [Fact]
+    public async Task CandidateBecomesFollowerUponReceivingAppendEntriesWithLaterTerm()
+    {
+        // Arrange
+        var candidate = Substitute.For<IServerNode>();
+        candidate.State = NodeState.Candidate;
+        candidate.Term = 5;
+        candidate.GetCurrentLeader().Returns((IServerNode)null);
 
-    //     // Act
-    //     bool voteGranted = await node.RequestVoteAsync(futureCandidate, 6);
+        var leader = Substitute.For<IServerNode>();
+        leader.Term = 6;
+        leader.Id.Returns("leader1");
 
-    //     // Assert
-    //     Assert.True(voteGranted);
-    //     Assert.Equal(6, node.Term);
-    //     Assert.Equal(futureCandidate.Id, node.votedFor);
-    // }
+        candidate.When(c => c.requestRPC(leader, "AppendEntries"))
+                 .Do(_ =>
+                 {
+                     candidate.Term = leader.Term;
+                     candidate.State = NodeState.Follower;
+                     candidate.GetCurrentLeader().Returns(leader);
+                 });
 
-    // // //16
+        // Act
+        await candidate.requestRPC(leader, "AppendEntries");
+
+        // Assert
+        Assert.Equal(NodeState.Follower, candidate.State);
+        Assert.Equal(6, candidate.Term);
+        Assert.Equal(leader, candidate.GetCurrentLeader());
+    }
+
+
+    // //13
+    [Fact]
+    public async Task CandidateBecomesFollowerUponReceivingAppendEntriesWithEqualTerm()
+    {
+        // Arrange
+        var candidate = new ServerNode();
+        candidate.State = NodeState.Candidate;
+        candidate.Term = 5;
+
+        var leader = new ServerNode();
+        leader.Term = 5;
+
+        // Act
+        await candidate.requestRPC(leader, "AppendEntries");
+
+        // Assert
+        Assert.Equal(NodeState.Follower, candidate.State);
+        Assert.Equal(5, candidate.Term);
+        Assert.Equal(leader, candidate.GetCurrentLeader());
+    }
+
+    // //14
+    [Fact]
+    public async Task NodeDeniesSecondVoteRequestForSameTerm()
+    {
+        // Arrange
+        var node = new ServerNode();
+        node.Term = 5;
+
+        var candidate1 = new ServerNode();
+        var candidate2 = new ServerNode();
+
+        // Act
+        bool firstVote = await node.RequestVoteAsync(candidate1, 5);
+        bool secondVote = await node.RequestVoteAsync(candidate2, 5);
+
+        // Assert
+        Assert.True(firstVote);
+        Assert.False(secondVote);
+    }
+
+    // //15
+    [Fact]
+    public async Task NodeVotesForFutureTerm()
+    {
+        // Arrange
+        var node = new ServerNode();
+        node.Term = 5;
+        node.votedFor = "some-other-node";
+
+        var futureCandidate = new ServerNode();
+
+        // Act
+        bool voteGranted = await node.RequestVoteAsync(futureCandidate, 6);
+
+        // Assert
+        Assert.True(voteGranted);
+        Assert.Equal(6, node.Term);
+        Assert.Equal(futureCandidate.Id, node.votedFor);
+    }
+
+    // //16
     // [Fact]
     // public async Task CandidateStartsNewElectionAfterTimeout()
     // {
@@ -331,332 +331,89 @@ public class UnitTest1
     //     await neighbor2.Received().RequestVoteAsync(candidate, 2);
     // }
 
-    // // //17
-    // [Fact]
-    // public void FollowerSendsResponseUponReceivingAppendEntries()
-    // {
-    //     // Arrange
-    //     var leader = Substitute.For<IServerNode>();
-    //     var follower = new ServerNode();
-
-    //     leader.Term.Returns(5);
-    //     leader.Id.Returns("leader-node-id");
-
-    //     // Act
-    //     follower.requestRPC(leader, "AppendEntries");
-
-    //     // Assert
-    //     Assert.Equal(NodeState.Follower, follower.State);
-    //     Assert.Equal(5, follower.Term);
-    //     leader.Received(1).respondRPC();
-    // }
-
-    // // //18
-    // [Fact]
-    // public void CandidateRejectsAppendEntriesWithPreviousTerm()
-    // {
-    //     // Arrange
-    //     var candidate = new ServerNode();
-    //     candidate.State = NodeState.Candidate;
-    //     candidate.Term = 5;
-
-    //     var sender = new ServerNode();
-    //     sender.Term = 4;
-
-    //     // Act
-    //     candidate.requestRPC(sender, "AppendEntries");
-
-    //     // Assert
-    //     Assert.Equal(NodeState.Candidate, candidate.State);
-    //     Assert.Equal(5, candidate.Term);
-    //     Assert.Null(candidate.GetCurrentLeader());
-    // }
-
-    // // // //19
-    // // [Fact]
-    // // public async Task LeaderSendsImmediateHeartbeatUponElection()
-    // // {
-    // //     // Arrange
-    // //     var follower1 = Substitute.For<IServerNode>();
-    // //     var follower2 = Substitute.For<IServerNode>();
-    // //     var neighbors = new List<IServerNode> { follower1, follower2 };
-
-    // //     var candidate = new ServerNode(true, neighbors);
-
-    // //     // Act
-    // //     await candidate.StartElectionAsync();
-
-    // //     // Assert
-    // //     follower1.Received(1).AppendEntries(candidate, candidate.Term, Arg.Any<List<LogEntry>>());
-    // //     follower2.Received(1).AppendEntries(candidate, candidate.Term, Arg.Any<List<LogEntry>>());
-    // // }
-
-    // //1.a cluster of five nodes where no leader
-    // [Fact]
-    // public async Task NodeTimesOutAndInitiatesElection()
-    // {
-    //     // Arrange
-    //     var node1 = new ServerNode();
-    //     var node2 = Substitute.For<IServerNode>();
-    //     var node3 = Substitute.For<IServerNode>();
-    //     var node4 = Substitute.For<IServerNode>();
-    //     var node5 = Substitute.For<IServerNode>();
-
-    //     node1.SetNeighbors(new List<IServerNode> { node2, node3, node4, node5 });
-    //     node2.SetNeighbors(new List<IServerNode> { node1, node3, node4, node5 });
-    //     node3.SetNeighbors(new List<IServerNode> { node1, node2, node4, node5 });
-    //     node4.SetNeighbors(new List<IServerNode> { node1, node2, node3, node5 });
-    //     node5.SetNeighbors(new List<IServerNode> { node1, node2, node3, node4 });
-
-    //     // Act
-    //     await Task.Delay(350);
-    //     await node1.StartElectionAsync();
-
-    //     // Assert
-    //     Assert.Equal(NodeState.Candidate, node1.State);
-    //     Assert.Equal(1, node1.Term);
-    // }
-
-    //HomeWork2 1 part
-
-    //1 when a leader receives a client command the leader sends the log entry in the next appendentries RPC to all node
+    // //17
     [Fact]
-    public async Task LeaderSendsLogEntryInNextAppendEntriesRPC()
-    {
-        // Arrange
-        var follower1 = Substitute.For<IServerNode>();
-        var follower2 = Substitute.For<IServerNode>();
-        var neighbors = new List<IServerNode> { follower1, follower2 };
-
-        var leader = new ServerNode(true, neighbors);
-        leader.State = NodeState.Leader;
-        leader.Term = 1;
-
-        var logEntry = new LogEntry(command: "TestCommand", term: 1, index: 1);
-
-        // Act
-        await leader.ReceiveClientCommandAsync(logEntry);
-
-        // Assert
-        await follower1.Received(1)
-            .AppendEntries(
-                leader,
-                leader.Term,
-                Arg.Is<List<LogEntry>>(entries =>
-                    entries.Count == 1 && entries[0].Command == "TestCommand"),
-                    0
-            );
-        await follower2.Received(1).
-            AppendEntries(
-                leader,
-                leader.Term,
-                Arg.Is<List<LogEntry>>(entries =>
-                    entries.Count == 1 && entries[0].Command == "TestCommand"),
-                    0
-            );
-    }
-
-    // //2 when a leader receives a command from the client, it is appended to its log
-    [Fact]
-    public async Task LeaderAppendsCommandToLog()
-    {
-        // Arrange
-        var leader = new ServerNode();
-        leader.State = NodeState.Leader;
-
-        var logEntry = new LogEntry(index: 1, term: leader.Term, command: "Set x = 10");
-
-        // Act
-        await leader.ReceiveClientCommandAsync(logEntry);
-
-        // Assert
-        Assert.Contains(logEntry, leader.Log);
-        Assert.Equal(1, leader.Log.Count);
-        Assert.Equal("Set x = 10", leader.Log[0].Command);
-    }
-
-    //3. when a node is new, its log is empty
-    [Fact]
-    public void NewNodeLogIsEmpty()
-    {
-        // Arrange
-        var newNode = new ServerNode();
-
-        // Assert
-        Assert.NotNull(newNode.Log);
-        Assert.Empty(newNode.Log);
-    }
-
-    //4. when a leader wins an election, it initializes the nextIndex for each follower to the index just after the last one it its log
-    [Fact]
-    public async Task LeaderInitializesNextIndexForFollowers()
-    {
-        // Arrange
-        var leader = new ServerNode();
-        var follower1 = Substitute.For<IServerNode>();
-        follower1.Id.Returns("Follower1");
-        var follower2 = Substitute.For<IServerNode>();
-        follower2.Id.Returns("Follower2");
-
-        leader.SetNeighbors(new List<IServerNode> { follower1, follower2 });
-        follower1.SetNeighbors(new List<IServerNode> { leader, follower2 });
-        follower2.SetNeighbors(new List<IServerNode> { leader, follower1 });
-
-        // Act
-        await leader.BecomeLeaderAsync();
-
-        // Assert
-        int expectedNextIndex = leader.Log.Count + 1;
-        Assert.Equal(expectedNextIndex, leader.NextIndex[follower1.Id]);
-        Assert.Equal(expectedNextIndex, leader.NextIndex[follower2.Id]);
-    }
-
-    //5.leaders maintain an "nextIndex" for each follower that is the index of the next log entry the leader will send to that follower
-    [Fact]
-    public async Task LeaderMaintainsNextIndexForEachFollower()
-    {
-        // Arrange
-        var follower1 = Substitute.For<IServerNode>();
-        follower1.Id.Returns("Follower1");
-
-        var follower2 = Substitute.For<IServerNode>();
-        follower2.Id.Returns("Follower2");
-
-        var neighbors = new List<IServerNode> { follower1, follower2 };
-
-        var leader = new ServerNode(true, neighbors);
-
-        await leader.BecomeLeaderAsync();
-
-        // Act
-        var newLogEntry = new LogEntry(index: 1, term: leader.Term, command: "Set x = 10");
-        leader.Log.Add(newLogEntry);
-
-        await follower1.AppendEntries(leader, leader.Term, new List<LogEntry> { newLogEntry }, 0);
-        await leader.UpdateNextIndexAsync(follower1.Id, leader.Log.Count);
-
-        // Assert
-        Assert.Equal(leader.Log.Count, leader.NextIndex[follower1.Id]);
-    }
-    //6.
-    [Fact]
-    public async Task LeaderIncludesCommitIndexInAppendEntries()
-    {
-        // Arrange
-        var follower1 = Substitute.For<IServerNode>();
-        follower1.Id.Returns("Follower1");
-        var follower2 = Substitute.For<IServerNode>();
-        follower2.Id.Returns("Follower2");
-
-        var neighbors = new List<IServerNode> { follower1, follower2 };
-        var leader = new ServerNode(true, neighbors);
-
-        await leader.BecomeLeaderAsync();
-
-        leader.Log.Add(new LogEntry(index: 1, term: leader.Term, command: "Set x = 10"));
-        leader.Log.Add(new LogEntry(index: 1, term: leader.Term, command: "Set x = 20"));
-        leader.CommitIndex = 2;
-
-        await leader.SendAppendEntriesAsync();
-
-        foreach (var follower in neighbors)
-        {
-            await follower.Received(1).AppendEntries(
-                leader,
-                leader.Term,
-                Arg.Any<List<LogEntry>>(),
-                leader.CommitIndex
-            );
-        }
-    }
-
-    //7
-    [Fact]
-    public async Task FollowerAppliesCommittedEntriesUponAppendEntries()
+    public void FollowerSendsResponseUponReceivingAppendEntries()
     {
         // Arrange
         var leader = Substitute.For<IServerNode>();
         var follower = new ServerNode();
-        var logs = new List<LogEntry>
-        {
-            new LogEntry (index:1, leader.Term, command:"Command1"),
-            new LogEntry (index:1, leader.Term, command:"Command2")
-        };
 
-        follower.Log = logs;
-        follower.CommitIndex = 0;
-        follower.LastApplied = 0;
-
-        var leaderCommitIndex = 2;
+        leader.Term.Returns(5);
+        leader.Id.Returns("leader-node-id");
 
         // Act
-        await follower.AppendEntries(leader, term: 1, follower.Log, leaderCommitIndex);
+        follower.requestRPC(leader, "AppendEntries");
 
         // Assert
-        Assert.Equal(2, follower.CommitIndex);
-        Assert.Equal(2, follower.LastApplied);
+        Assert.Equal(NodeState.Follower, follower.State);
+        Assert.Equal(5, follower.Term);
+        leader.Received(1).respondRPC();
     }
 
-    //8
-
-
-    //9. the leader commits logs by incrementing its committed log index
+    // //18
     [Fact]
-    public async Task LeaderCommitsLogsByIncrementingCommitIndex()
+    public void CandidateRejectsAppendEntriesWithPreviousTerm()
     {
         // Arrange
-        var follower1 = Substitute.For<IServerNode>();
-        follower1.Id.Returns("Follower1");
+        var candidate = new ServerNode();
+        candidate.State = NodeState.Candidate;
+        candidate.Term = 5;
 
-        var follower2 = Substitute.For<IServerNode>();
-        follower2.Id.Returns("Follower2");
-
-        var neighbors = new List<IServerNode> { follower1, follower2 };
-        var leader = new ServerNode(true, neighbors);
-
-        await leader.BecomeLeaderAsync();
-
-        var logEntry1 = new LogEntry(index: 1, term: leader.Term, command: "Command1");
-        var logEntry2 = new LogEntry(index: 2, term: leader.Term, command: "Command2");
-        leader.Log.Add(logEntry1);
-        leader.Log.Add(logEntry2);
-
-        await leader.SendAppendEntriesAsync();
-
-        await leader.ReceiveConfirmationFromFollower(follower1.Id, logEntry1.Index);
-        await leader.ReceiveConfirmationFromFollower(follower2.Id, logEntry1.Index);
-
-        // Assert
-        Assert.Equal(1, leader.CommitIndex);
+        var sender = new ServerNode();
+        sender.Term = 4;
 
         // Act
-        await leader.ReceiveConfirmationFromFollower(follower1.Id, logEntry2.Index);
-        await leader.ReceiveConfirmationFromFollower(follower2.Id, logEntry2.Index);
+        candidate.requestRPC(sender, "AppendEntries");
 
         // Assert
-        Assert.Equal(2, leader.CommitIndex);
+        Assert.Equal(NodeState.Candidate, candidate.State);
+        Assert.Equal(5, candidate.Term);
+        Assert.Null(candidate.GetCurrentLeader());
     }
 
-    //10. given a follower receives an appendentries with log(s) it will add those entries to its personal log
+    // // //19
+    // [Fact]
+    // public async Task LeaderSendsImmediateHeartbeatUponElection()
+    // {
+    //     // Arrange
+    //     var follower1 = Substitute.For<IServerNode>();
+    //     var follower2 = Substitute.For<IServerNode>();
+    //     var neighbors = new List<IServerNode> { follower1, follower2 };
+
+    //     var candidate = new ServerNode(true, neighbors);
+
+    //     // Act
+    //     await candidate.StartElectionAsync();
+
+    //     // Assert
+    //     follower1.Received(1).AppendEntries(candidate, candidate.Term, Arg.Any<List<LogEntry>>());
+    //     follower2.Received(1).AppendEntries(candidate, candidate.Term, Arg.Any<List<LogEntry>>());
+    // }
+
+    //1.a cluster of five nodes where no leader
     [Fact]
-    public async Task FollowerAddsEntriesToPersonalLogUponAppendEntries()
+    public async Task NodeTimesOutAndInitiatesElection()
     {
         // Arrange
-        var leader = Substitute.For<IServerNode>();
-        var follower = new ServerNode();
-        follower.Term = 1;
+        var node1 = new ServerNode();
+        var node2 = Substitute.For<IServerNode>();
+        var node3 = Substitute.For<IServerNode>();
+        var node4 = Substitute.For<IServerNode>();
+        var node5 = Substitute.For<IServerNode>();
 
-        var newEntries = new List<LogEntry>
-        {
-            new LogEntry(index: 1, term: 1, command: "Set x = 10"),
-            new LogEntry(index: 2, term: 1, command: "Set y = 20")
-        };
+        node1.SetNeighbors(new List<IServerNode> { node2, node3, node4, node5 });
+        node2.SetNeighbors(new List<IServerNode> { node1, node3, node4, node5 });
+        node3.SetNeighbors(new List<IServerNode> { node1, node2, node4, node5 });
+        node4.SetNeighbors(new List<IServerNode> { node1, node2, node3, node5 });
+        node5.SetNeighbors(new List<IServerNode> { node1, node2, node3, node4 });
+
         // Act
-        await follower.AppendEntries(leader, term: 1, logEntries: newEntries, leaderCommitIndex: 0);
+        await Task.Delay(350);
+        await node1.StartElectionAsync();
 
         // Assert
-        Assert.Equal(2, follower.Log.Count);
-        Assert.Equal("Set x = 10", follower.Log[0].Command);
-        Assert.Equal("Set y = 20", follower.Log[1].Command);
+        Assert.Equal(NodeState.Candidate, node1.State);
+        Assert.Equal(1, node1.Term);
     }
 }

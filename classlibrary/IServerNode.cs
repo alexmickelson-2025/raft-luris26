@@ -16,7 +16,10 @@ public interface IServerNode
     public int CommitIndex { get; set; }
     public Dictionary<string, int> NextIndex { get; set; }
     void ApplyLogEntry(LogEntry entry);
+    void ApplyCommittedLogs();
     Task ReceiveConfirmationFromFollower(string followerId, int logIndex);
+    Task<bool> ConfirmReplicationAsync(LogEntry logEntry, Action<string> clientCallback);
+    Task<(int Term, int LastLogIndex)> RespondToAppendEntriesAsync();
     Task requestRPC(IServerNode sender, string rpcType); //sent
     Task AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries, int leaderCommitIndex);
     Task ReceiveClientCommandAsync(LogEntry command);
