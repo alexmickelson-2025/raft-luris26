@@ -6,19 +6,21 @@ public interface IServerNode
     public int Term { get; set; }
     public string CurrentLiderID { get; set; } //id
     public bool SimulationRunning { get; set; }
+    public int LastApplied { get; set; }
     public DateTime ElectionStartTime { get; set; }
     public TimeSpan ElectionTimeout { get; set; }
     public List<IServerNode> _neighbors { get; set; }
     public NodeState State { get; set; }
     public IServerNode InnerNode { get; set; }
-    object CancellationTokenSource { get; }
-
-    public IEnumerable<IServerNode> GetNeighbors() => _neighbors;
     public List<LogEntry> Log { get; set; }
+    public int CommitIndex { get; set; }
     public Dictionary<string, int> NextIndex { get; set; }
+    void ApplyLogEntry(LogEntry entry);
+    Task ReceiveConfirmationFromFollower(string followerId, int logIndex);
     Task requestRPC(IServerNode sender, string rpcType); //sent
-    Task AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries);
+    Task AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries, int leaderCommitIndex);
     Task ReceiveClientCommandAsync(LogEntry command);
+    Task SendAppendEntriesAsync();
     void respondRPC(); //receive
     Task<bool> RequestVoteAsync(IServerNode candidate, int term);
     void SetNeighbors(List<IServerNode> neighbors);

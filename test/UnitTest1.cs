@@ -443,14 +443,16 @@ public class UnitTest1
                 leader,
                 leader.Term,
                 Arg.Is<List<LogEntry>>(entries =>
-                    entries.Count == 1 && entries[0].Command == "TestCommand")
+                    entries.Count == 1 && entries[0].Command == "TestCommand"),
+                    0
             );
         await follower2.Received(1).
             AppendEntries(
                 leader,
                 leader.Term,
                 Arg.Is<List<LogEntry>>(entries =>
-                    entries.Count == 1 && entries[0].Command == "TestCommand")
+                    entries.Count == 1 && entries[0].Command == "TestCommand"),
+                    0
             );
     }
 
@@ -508,6 +510,7 @@ public class UnitTest1
         Assert.Equal(expectedNextIndex, leader.NextIndex[follower1.Id]);
         Assert.Equal(expectedNextIndex, leader.NextIndex[follower2.Id]);
     }
+
     //5.leaders maintain an "nextIndex" for each follower that is the index of the next log entry the leader will send to that follower
     [Fact]
     public async Task LeaderMaintainsNextIndexForEachFollower()
@@ -529,10 +532,131 @@ public class UnitTest1
         var newLogEntry = new LogEntry(index: 1, term: leader.Term, command: "Set x = 10");
         leader.Log.Add(newLogEntry);
 
-        await follower1.AppendEntries(leader, leader.Term, new List<LogEntry> { newLogEntry });
+        await follower1.AppendEntries(leader, leader.Term, new List<LogEntry> { newLogEntry }, 0);
         await leader.UpdateNextIndexAsync(follower1.Id, leader.Log.Count);
 
         // Assert
         Assert.Equal(leader.Log.Count, leader.NextIndex[follower1.Id]);
+    }
+    //6.
+    [Fact]
+    public async Task LeaderIncludesCommitIndexInAppendEntries()
+    {
+        // Arrange
+        var follower1 = Substitute.For<IServerNode>();
+        follower1.Id.Returns("Follower1");
+        var follower2 = Substitute.For<IServerNode>();
+        follower2.Id.Returns("Follower2");
+
+        var neighbors = new List<IServerNode> { follower1, follower2 };
+        var leader = new ServerNode(true, neighbors);
+
+        await leader.BecomeLeaderAsync();
+
+        leader.Log.Add(new LogEntry(index: 1, term: leader.Term, command: "Set x = 10"));
+        leader.Log.Add(new LogEntry(index: 1, term: leader.Term, command: "Set x = 20"));
+        leader.CommitIndex = 2;
+
+        await leader.SendAppendEntriesAsync();
+
+        foreach (var follower in neighbors)
+        {
+            await follower.Received(1).AppendEntries(
+                leader,
+                leader.Term,
+                Arg.Any<List<LogEntry>>(),
+                leader.CommitIndex
+            );
+        }
+    }
+
+    //7
+    [Fact]
+    public async Task FollowerAppliesCommittedEntriesUponAppendEntries()
+    {
+        // Arrange
+        var leader = Substitute.For<IServerNode>();
+        var follower = new ServerNode();
+        var logs = new List<LogEntry>
+        {
+            new LogEntry (index:1, leader.Term, command:"Command1"),
+            new LogEntry (index:1, leader.Term, command:"Command2")
+        };
+
+        follower.Log = logs;
+        follower.CommitIndex = 0;
+        follower.LastApplied = 0;
+
+        var leaderCommitIndex = 2;
+
+        // Act
+        await follower.AppendEntries(leader, term: 1, follower.Log, leaderCommitIndex);
+
+        // Assert
+        Assert.Equal(2, follower.CommitIndex);
+        Assert.Equal(2, follower.LastApplied);
+    }
+
+    //8
+
+
+    //9. the leader commits logs by incrementing its committed log index
+    [Fact]
+    public async Task LeaderCommitsLogsByIncrementingCommitIndex()
+    {
+        // Arrange
+        var follower1 = Substitute.For<IServerNode>();
+        follower1.Id.Returns("Follower1");
+
+        var follower2 = Substitute.For<IServerNode>();
+        follower2.Id.Returns("Follower2");
+
+        var neighbors = new List<IServerNode> { follower1, follower2 };
+        var leader = new ServerNode(true, neighbors);
+
+        await leader.BecomeLeaderAsync();
+
+        var logEntry1 = new LogEntry(index: 1, term: leader.Term, command: "Command1");
+        var logEntry2 = new LogEntry(index: 2, term: leader.Term, command: "Command2");
+        leader.Log.Add(logEntry1);
+        leader.Log.Add(logEntry2);
+
+        await leader.SendAppendEntriesAsync();
+
+        await leader.ReceiveConfirmationFromFollower(follower1.Id, logEntry1.Index);
+        await leader.ReceiveConfirmationFromFollower(follower2.Id, logEntry1.Index);
+
+        // Assert
+        Assert.Equal(1, leader.CommitIndex);
+
+        // Act
+        await leader.ReceiveConfirmationFromFollower(follower1.Id, logEntry2.Index);
+        await leader.ReceiveConfirmationFromFollower(follower2.Id, logEntry2.Index);
+
+        // Assert
+        Assert.Equal(2, leader.CommitIndex);
+    }
+
+    //10. given a follower receives an appendentries with log(s) it will add those entries to its personal log
+    [Fact]
+    public async Task FollowerAddsEntriesToPersonalLogUponAppendEntries()
+    {
+        // Arrange
+        var leader = Substitute.For<IServerNode>();
+        var follower = new ServerNode();
+        follower.Term = 1;
+
+        var newEntries = new List<LogEntry>
+        {
+            new LogEntry(index: 1, term: 1, command: "Set x = 10"),
+            new LogEntry(index: 2, term: 1, command: "Set y = 20")
+        };
+        // Act
+        await follower.AppendEntries(leader, term: 1, logEntries: newEntries, leaderCommitIndex: 0);
+
+        // Assert
+        Assert.Equal(2, follower.Log.Count);
+        Assert.Equal("Set x = 10", follower.Log[0].Command);
+        Assert.Equal("Set y = 20", follower.Log[1].Command);
     }
 }

@@ -23,11 +23,13 @@ public class ServerNode : IServerNode
     public IServerNode _innerNode { get; set; }
     public List<LogEntry> Log { get; set; }
     private int _timeoutMultiplier = 1;
+    public int CommitIndex { get; set; } = 0;
     public Dictionary<string, int> NextIndex { get; set; } = new();
-    public IServerNode InnerNode { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-
-    public object CancellationTokenSource => throw new NotImplementedException();
-
+    public IServerNode InnerNode { get; set; }
+    public DateTime ElectionStartTime { get; set; }
+    public TimeSpan ElectionTimeout { get; set; }
+    public List<LogEntry> entries { get; set; }
+    public int LastApplied { get; set; }
     public ServerNode()
     {
         _neighbors = new List<IServerNode>();
@@ -76,9 +78,7 @@ public class ServerNode : IServerNode
         }
     }
 
-    public DateTime ElectionStartTime { get; set; }
-    public TimeSpan ElectionTimeout { get; set; }
-    public List<LogEntry> entries { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
 
     public void StartElectionTimer()
     {
@@ -146,7 +146,7 @@ public class ServerNode : IServerNode
             }
         }
         var heartbeatTasks = _neighbors.Select(neighbor =>
-            neighbor.AppendEntries(this, Term, new List<LogEntry>()) // esto es lo que envio
+            neighbor.AppendEntries(this, Term, new List<LogEntry>(), 0) // esto es lo que envio
         );
 
         await Task.WhenAll(heartbeatTasks);
@@ -189,13 +189,13 @@ public class ServerNode : IServerNode
         return false;
     }
 
-    public async Task AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries)
+    public async Task AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries, int leaderCommitIndex)
     {
         await Task.Delay(10);
         if (term >= Term)
         {
             Term = term;
-            foreach (var entry in entries)
+            foreach (var entry in logEntries)
             {
                 if (entry.Index > Log.Count)
                 {
@@ -203,9 +203,18 @@ public class ServerNode : IServerNode
                 }
                 else if (Log[entry.Index - 1].Term != entry.Term)
                 {
-                    // Conflict detected, remove the existing entry and all that follow it
                     Log.RemoveRange(entry.Index - 1, Log.Count - (entry.Index - 1));
                     Log.Add(entry);
+                }
+                if (leaderCommitIndex > CommitIndex)
+                {
+                    CommitIndex = Math.Min(leaderCommitIndex, Log.Count);
+
+                    for (int i = LastApplied + 1; i <= CommitIndex; i++)
+                    {
+                        ApplyLogEntry(Log[i - 1]);
+                        LastApplied = i;
+                    }
                 }
             }
             _innerNode = leader;
@@ -233,7 +242,7 @@ public class ServerNode : IServerNode
         }
         Log.Add(command);
         var appendTasks = _neighbors.Select(neighbor =>
-            neighbor.AppendEntries(this, Term, new List<LogEntry> { command })
+            neighbor.AppendEntries(this, Term, new List<LogEntry> { command }, 0)
         );
         await Task.WhenAll(appendTasks);
     }
@@ -246,6 +255,43 @@ public class ServerNode : IServerNode
         }
 
         NextIndex[followerId] = nextIndex;
+        await Task.CompletedTask;
+    }
+
+    public async Task SendAppendEntriesAsync()
+    {
+        foreach (var neighbor in _neighbors)
+        {
+            var entriesToSend = Log.Skip(NextIndex[neighbor.Id] - 1).ToList();
+            await neighbor.AppendEntries(this, Term, entriesToSend, CommitIndex);
+        }
+    }
+
+    public void ApplyLogEntry(LogEntry entry)
+    {
+        Console.WriteLine($"Applying log entry");
+    }
+
+    public async Task ReceiveConfirmationFromFollower(string followerId, int index)
+    {
+        if (!NextIndex.ContainsKey(followerId))
+        {
+            return;
+        }
+
+        if (index >= NextIndex[followerId])
+        {
+            NextIndex[followerId] = index + 1;
+        }
+
+        int majority = (_neighbors.Count + 1) / 2;
+        int replicatedCount = _neighbors.Count(n => NextIndex[n.Id] > index);
+
+        if (replicatedCount >= majority)
+        {
+            CommitIndex = index;
+        }
+
         await Task.CompletedTask;
     }
 }
