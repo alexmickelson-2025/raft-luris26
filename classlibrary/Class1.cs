@@ -30,6 +30,9 @@ public class ServerNode : IServerNode
     public TimeSpan ElectionTimeout { get; set; }
     public List<LogEntry> entries { get; set; }
     public int LastApplied { get; set; }
+    private const int MaxRetries = 3;
+    private Dictionary<string, int> RetryCounts = new();
+
     public ServerNode()
     {
         _neighbors = new List<IServerNode>();
@@ -77,7 +80,6 @@ public class ServerNode : IServerNode
             sender.respondRPC();
         }
     }
-
 
 
     public void StartElectionTimer()
@@ -132,11 +134,15 @@ public class ServerNode : IServerNode
 
     public async Task BecomeLeaderAsync()
     {
+        Console.WriteLine("el principio del become leader");
+
         State = NodeState.Leader;
         _isLeader = true;
 
         NextIndex = new Dictionary<string, int>();
         int leaderLastLogIndex = Log.Count;
+
+        Console.WriteLine("antes del foreach");
 
         foreach (var neighbor in _neighbors)
         {
@@ -146,9 +152,10 @@ public class ServerNode : IServerNode
             }
         }
         var heartbeatTasks = _neighbors.Select(neighbor =>
-            neighbor.AppendEntries(this, Term, new List<LogEntry>(), 0) // esto es lo que envio
+            neighbor.AppendEntries(this, Term, new List<LogEntry>(), 0, 0, 0) // esto es lo que envio
         );
 
+        Console.WriteLine("envio un heartbeat");
         await Task.WhenAll(heartbeatTasks);
     }
 
@@ -189,42 +196,42 @@ public class ServerNode : IServerNode
         return false;
     }
 
-    public async Task AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries, int leaderCommitIndex)
+    public async Task<bool> AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries, int leaderCommitIndex, int prevLogIndex, int prevLogTerm)
     {
         await Task.Delay(10);
 
-        if (term < Term) return;
-
-        if (logEntries.Count > 0 && !ValidateLogConsistency(logEntries))
+        if (term < Term)
         {
-            Console.WriteLine("Heartbeat rejected due to log mismatch.");
-            return;
+            Console.WriteLine("AppendEntries rechazado: término desactualizado.");
+            return false;
         }
-
-        UpdateTermAndLeader(term, leader);
-        ProcessLogEntries(logEntries);
-        UpdateCommitIndexAndApplyEntries(leaderCommitIndex);
-        ResetElectionTimer();
-    }
-
-    private bool ValidateLogConsistency(List<LogEntry> logEntries)
-    {
-        var prevLogIndex = logEntries[0].Index - 1;
-        var prevLogTerm = logEntries[0].Term;
 
         if (prevLogIndex > 0)
         {
-            return prevLogIndex <= Log.Count && Log[prevLogIndex - 1].Term == prevLogTerm;
+            if (prevLogIndex > Log.Count)
+            {
+                Console.WriteLine($"AppendEntries rechazado: prevLogIndex {prevLogIndex} está fuera de rango. Log.Count = {Log.Count}");
+                return false;
+            }
+
+            if (Log[prevLogIndex - 1].Term != prevLogTerm)
+            {
+                Console.WriteLine($"AppendEntries rechazado: inconsistencia de términos en prevLogIndex {prevLogIndex}. Buscando coincidencia...");
+                return false;
+            }
         }
 
-        return true;
-    }
+        if (term > Term)
+        {
+            Term = term;
+            _innerNode = leader;
+            State = NodeState.Follower;
+        }
 
-    private void UpdateTermAndLeader(int term, IServerNode leader)
-    {
-        Term = term;
-        _innerNode = leader;
-        State = NodeState.Follower;
+        ProcessLogEntries(logEntries);
+        UpdateCommitIndexAndApplyEntries(leaderCommitIndex);
+        ResetElectionTimer();
+        return true;
     }
 
     private void ProcessLogEntries(List<LogEntry> logEntries)
@@ -256,6 +263,11 @@ public class ServerNode : IServerNode
             }
         }
     }
+    public void ApplyLogEntry(LogEntry entry)
+    {
+        Console.WriteLine($"Applying log entry");
+    }
+
 
     void IServerNode.StartSimulationLoop()
     {
@@ -276,7 +288,7 @@ public class ServerNode : IServerNode
         }
         Log.Add(command);
         var appendTasks = _neighbors.Select(neighbor =>
-            neighbor.AppendEntries(this, Term, new List<LogEntry> { command }, 0)
+            neighbor.AppendEntries(this, Term, new List<LogEntry> { command }, 0, 0, 0)
         );
         await Task.WhenAll(appendTasks);
     }
@@ -296,15 +308,40 @@ public class ServerNode : IServerNode
     {
         foreach (var neighbor in _neighbors)
         {
+            if (!RetryCounts.ContainsKey(neighbor.Id))
+            {
+                RetryCounts[neighbor.Id] = 0;
+            }
+
+            int prevLogIndex = NextIndex[neighbor.Id] - 1;
+            int prevLogTerm = prevLogIndex > 0 ? Log[prevLogIndex - 1].Term : 0;
+
             var entriesToSend = Log.Skip(NextIndex[neighbor.Id] - 1).ToList();
-            await neighbor.AppendEntries(this, Term, entriesToSend, CommitIndex);
+
+            bool success = await neighbor.AppendEntries(this, Term, entriesToSend, CommitIndex, prevLogIndex, prevLogTerm);
+
+            if (!success)
+            {
+                RetryCounts[neighbor.Id]++;
+
+                if (RetryCounts[neighbor.Id] > MaxRetries)
+                {
+                    Console.WriteLine($"Max retries exceeded for {neighbor.Id}. Skipping.");
+                    continue;
+                }
+
+                Console.WriteLine($"AppendEntries rejected by {neighbor.Id}. Decrementing NextIndex and retrying.");
+                NextIndex[neighbor.Id] = Math.Max(1, NextIndex[neighbor.Id] - 1);
+
+                await SendAppendEntriesAsync();
+            }
+            else
+            {
+                RetryCounts[neighbor.Id] = 0;
+            }
         }
     }
 
-    public void ApplyLogEntry(LogEntry entry)
-    {
-        Console.WriteLine($"Applying log entry");
-    }
 
     public async Task ReceiveConfirmationFromFollower(string followerId, int index)
     {
@@ -343,8 +380,14 @@ public class ServerNode : IServerNode
         {
             try
             {
-                await neighbor.AppendEntries(this, Term, new List<LogEntry> { logEntry }, CommitIndex);
-                return true;
+                return await neighbor.AppendEntries(
+                    this,
+                    Term,
+                    new List<LogEntry> { logEntry },
+                    CommitIndex,
+                    NextIndex[neighbor.Id] - 1,
+                    Log.ElementAtOrDefault(NextIndex[neighbor.Id] - 2)?.Term ?? 0
+                );
             }
             catch
             {
@@ -356,14 +399,17 @@ public class ServerNode : IServerNode
         acknowledgements += results.Count(success => success);
 
         int majority = (_neighbors.Count / 2) + 1;
+
         if (acknowledgements >= majority)
         {
+            CommitIndex = logEntry.Index;
             clientCallback?.Invoke($"Log entry {logEntry.Index} comfirt.");
             return true;
         }
 
         return false;
     }
+
 
     public void ApplyCommittedLogs()
     {

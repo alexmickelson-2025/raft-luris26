@@ -8,9 +8,9 @@ namespace test;
 
 public class Log
 {
-    //HomeWork2 1 part
+    // //HomeWork2 1 part
 
-    //1 when a leader receives a client command the leader sends the log entry in the next appendentries RPC to all node
+    // //1 when a leader receives a client command the leader sends the log entry in the next appendentries RPC to all node
     [Fact]
     public async Task LeaderSendsLogEntryInNextAppendEntriesRPC()
     {
@@ -35,6 +35,8 @@ public class Log
                 leader.Term,
                 Arg.Is<List<LogEntry>>(entries =>
                     entries.Count == 1 && entries[0].Command == "TestCommand"),
+                    0,
+                    0,
                     0
             );
         await follower2.Received(1).
@@ -43,11 +45,13 @@ public class Log
                 leader.Term,
                 Arg.Is<List<LogEntry>>(entries =>
                     entries.Count == 1 && entries[0].Command == "TestCommand"),
+                    0,
+                    0,
                     0
             );
     }
 
-    // //2 when a leader receives a command from the client, it is appended to its log
+    //2 when a leader receives a command from the client, it is appended to its log
     [Fact]
     public async Task LeaderAppendsCommandToLog()
     {
@@ -79,7 +83,6 @@ public class Log
     }
 
     //4. when a leader wins an election, it initializes the nextIndex for each follower to the index just after the last one it its log
-    [Fact]
     public async Task LeaderInitializesNextIndexForFollowers()
     {
         // Arrange
@@ -123,7 +126,7 @@ public class Log
         var newLogEntry = new LogEntry(index: 1, term: leader.Term, command: "Set x = 10");
         leader.Log.Add(newLogEntry);
 
-        await follower1.AppendEntries(leader, leader.Term, new List<LogEntry> { newLogEntry }, 0);
+        await follower1.AppendEntries(leader, leader.Term, new List<LogEntry> { newLogEntry }, leader.CommitIndex, 0, 0);
         await leader.UpdateNextIndexAsync(follower1.Id, leader.Log.Count);
 
         // Assert
@@ -153,16 +156,17 @@ public class Log
 
         foreach (var follower in neighbors)
         {
-            await follower.Received(1).AppendEntries(
+            await follower.Received().AppendEntries(
                 leader,
                 leader.Term,
                 Arg.Any<List<LogEntry>>(),
-                leader.CommitIndex
+                leader.CommitIndex,
+                0,
+                0
             );
         }
     }
-
-    //7
+    //7 When a follower learns that a log entry is committed, it applies the entry to its local state machine
     [Fact]
     public async Task FollowerAppliesCommittedEntriesUponAppendEntries()
     {
@@ -182,15 +186,42 @@ public class Log
         var leaderCommitIndex = 2;
 
         // Act
-        await follower.AppendEntries(leader, term: 1, follower.Log, leaderCommitIndex);
+        await follower.AppendEntries(leader, term: 1, follower.Log, leaderCommitIndex, 0, 0);
 
         // Assert
         Assert.Equal(2, follower.CommitIndex);
         Assert.Equal(2, follower.LastApplied);
     }
 
-    //8
+    //8 when the leader has received a majority confirmation of a log, it commits it
+    [Fact]
+    public async Task LeaderCommitsLogAfterMajorityConfirmation()
+    {
+        // Arrange
+        var follower1 = Substitute.For<IServerNode>();
+        follower1.Id.Returns("Follower1");
 
+        var follower2 = Substitute.For<IServerNode>();
+        follower2.Id.Returns("Follower2");
+
+        var neighbors = new List<IServerNode> { follower1, follower2 };
+
+        var leader = new ServerNode(true, neighbors);
+        await leader.BecomeLeaderAsync();
+
+        var logEntry = new LogEntry(index: 1, term: leader.Term, command: "Set x = 10");
+        leader.Log.Add(logEntry);
+
+        await leader.ReceiveConfirmationFromFollower(follower1.Id, 1);
+        await leader.ReceiveConfirmationFromFollower(follower2.Id, 1);
+
+        // Act
+        await leader.ReceiveConfirmationFromFollower(follower1.Id, 1);
+
+        // Assert
+        Assert.Equal(1, leader.CommitIndex);
+        Assert.Contains(logEntry, leader.Log);
+    }
 
     //9. the leader commits logs by incrementing its committed log index
     [Fact]
@@ -244,7 +275,7 @@ public class Log
             new LogEntry(index: 2, term: 1, command: "Set y = 20")
         };
         // Act
-        await follower.AppendEntries(leader, term: 1, logEntries: newEntries, leaderCommitIndex: 0);
+        await follower.AppendEntries(leader, term: 1, logEntries: newEntries, leaderCommitIndex: 0, 0, 0);
 
         // Assert
         Assert.Equal(2, follower.Log.Count);
@@ -291,14 +322,14 @@ public class Log
         var logEntry = new LogEntry(index: 1, term: leader.Term, command: "TestCommand");
         leader.Log.Add(logEntry);
 
-        follower1.AppendEntries(Arg.Any<IServerNode>(), Arg.Any<int>(), Arg.Any<List<LogEntry>>(), Arg.Any<int>())
-                 .Returns(Task.CompletedTask);
+        follower1.AppendEntries(Arg.Any<IServerNode>(), Arg.Any<int>(), Arg.Any<List<LogEntry>>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>())
+                 .Returns(Task.FromResult(true));
 
-        follower2.AppendEntries(Arg.Any<IServerNode>(), Arg.Any<int>(), Arg.Any<List<LogEntry>>(), Arg.Any<int>())
-                 .Returns(Task.CompletedTask);
+        follower2.AppendEntries(Arg.Any<IServerNode>(), Arg.Any<int>(), Arg.Any<List<LogEntry>>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>())
+                 .Returns(Task.FromResult(true));
 
-        follower3.AppendEntries(Arg.Any<IServerNode>(), Arg.Any<int>(), Arg.Any<List<LogEntry>>(), Arg.Any<int>())
-                 .Returns(Task.FromException(new Exception("Replication failed")));
+        follower3.AppendEntries(Arg.Any<IServerNode>(), Arg.Any<int>(), Arg.Any<List<LogEntry>>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>())
+                 .Returns(Task.FromResult(false));
 
         string clientResponse = string.Empty;
         void ClientCallback(string response) => clientResponse = response;
@@ -316,11 +347,35 @@ public class Log
                 leader.Term,
                 Arg.Is<List<LogEntry>>(entries =>
                     entries.Count == 1 && entries[0].Command == "TestCommand"),
+                0,
+                0,
+                0
+            );
+
+        await follower2.Received(1)
+            .AppendEntries(
+                leader,
+                leader.Term,
+                Arg.Is<List<LogEntry>>(entries =>
+                    entries.Count == 1 && entries[0].Command == "TestCommand"),
+                0,
+                0,
+                0
+            );
+
+        await follower3.Received(1)
+            .AppendEntries(
+                leader,
+                leader.Term,
+                Arg.Is<List<LogEntry>>(entries =>
+                    entries.Count == 1 && entries[0].Command == "TestCommand"),
+                0,
+                0,
                 0
             );
     }
 
-    //13
+    //13 given a leader node, when a log is committed, it applies it to its internal state machine
     [Fact]
     public void LeaderAppliesCommittedLogsToStateMachine()
     {
@@ -339,13 +394,286 @@ public class Log
         Assert.Equal(2, leader.LastApplied);
     }
 
-    //14 when a follower receives a valid heartbeat
+    // 14 when a follower receives a valid heartbeat
     [Fact]
     public async Task FollowerRejectsHeartbeatOnLogMismatch()
     {
         // Arrange
         var leader = Substitute.For<IServerNode>();
+        leader.Term.Returns(2);
+        var follower = new ServerNode();
+        follower.Term = 1;
+
+        follower.Log.Add(new LogEntry(index: 1, term: 1, command: "Set x = 10"));
+        follower.Log.Add(new LogEntry(index: 2, term: 1, command: "Set y = 20"));
+
+        var leaderLogs = new List<LogEntry>
+    {
+        new LogEntry(index: 3, term: 2, command: "Set z = 30"),
+    };
+        int leaderCommitIndex = 3;
+        int prevLogIndex = 2;
+        int prevLogTerm = 2;
+
+        // Act
+        bool success = await follower.AppendEntries(leader, term: 2, leaderLogs, leaderCommitIndex, prevLogIndex, prevLogTerm);
+
+        // Assert
+        Assert.False(success);
+        Assert.Equal(0, follower.CommitIndex);
+        Assert.DoesNotContain(leaderLogs, entry => follower.Log.Contains(entry));
+    }
+    //in class
+    [Fact]
+    public async Task LeaderSendsAppendEntriesDuringElectionLoop()
+    {
+        // Arrange
+        var follower1 = Substitute.For<IServerNode>();
+        follower1.Id.Returns("Follower1");
+
+        var neighbors = new List<IServerNode> { follower1 };
+        var leader = new ServerNode(true, neighbors);
+        leader.SetNeighbors(neighbors);
+
+        await leader.BecomeLeaderAsync();
+
+        // Act
+        await Task.Delay(400);
+
+        // Assert
+        await follower1.Received(2).AppendEntries(leader, 0, Arg.Any<List<LogEntry>>(), 0, 0, 0);
+    }
+
+    //15 When sending an AppendEntries RPC, the leader includes the index and term of the entry in its log that immediately precedes the new entries
+    [Fact]
+    public async Task LeaderRetriesAppendEntriesWhenFollowerRejects()
+    {
+        // Arrange
+        var follower = Substitute.For<IServerNode>();
+        follower.Id.Returns("Follower1");
+
+        var leader = new ServerNode(true, new List<IServerNode> { follower });
+        await leader.BecomeLeaderAsync();
+
+        var logEntry1 = new LogEntry(index: 1, term: 1, command: "Command1");
+        var logEntry2 = new LogEntry(index: 2, term: 1, command: "Command2");
+        leader.Log.Add(logEntry1);
+        leader.Log.Add(logEntry2);
+        leader.NextIndex[follower.Id] = 3;
+
+        follower.AppendEntries(
+            Arg.Any<IServerNode>(),
+            Arg.Any<int>(),
+            Arg.Any<List<LogEntry>>(),
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            Arg.Any<int>()
+        ).Returns(call =>
+        {
+            int prevLogIndex = call.ArgAt<int>(4);
+            return prevLogIndex != 2;
+        });
+
+        // Act
+        await leader.SendAppendEntriesAsync();
+
+        // Assert
+        await follower.Received().AppendEntries(
+            leader,
+            leader.Term,
+            Arg.Any<List<LogEntry>>(),
+            leader.CommitIndex,
+            1,
+            1
+        );
+
+        Assert.Equal(2, leader.NextIndex[follower.Id]);
+    }
+
+    //16. when a leader sends a heartbeat with a log, but does not receive responses from a majority of nodes, the entry is uncommitted
+    [Fact]
+    public async Task LeaderDoesNotCommitEntryWithoutMajorityResponses()
+    {
+        // Arrange
+        var follower1 = Substitute.For<IServerNode>();
+        follower1.Id.Returns("Follower1");
+
+        var follower2 = Substitute.For<IServerNode>();
+        follower2.Id.Returns("Follower2");
+
+        var follower3 = Substitute.For<IServerNode>();
+        follower3.Id.Returns("Follower3");
+
+        var neighbors = new List<IServerNode> { follower1, follower2, follower3 };
+        var leader = new ServerNode(true, neighbors);
+
+        await leader.BecomeLeaderAsync();
+
+        var newLogEntry = new LogEntry(index: 1, term: leader.Term, command: "Set x = 10");
+        leader.Log.Add(newLogEntry);
+
+        follower1.AppendEntries(
+            Arg.Any<IServerNode>(),
+            Arg.Any<int>(),
+            Arg.Any<List<LogEntry>>(),
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            Arg.Any<int>()
+        ).Returns(true);
+
+        follower2.AppendEntries(
+            Arg.Any<IServerNode>(),
+            Arg.Any<int>(),
+            Arg.Any<List<LogEntry>>(),
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            Arg.Any<int>()
+        ).Returns(false);
+
+        follower3.AppendEntries(
+            Arg.Any<IServerNode>(),
+            Arg.Any<int>(),
+            Arg.Any<List<LogEntry>>(),
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            Arg.Any<int>()
+        ).Returns(false);
+
+        // Act
+        await leader.SendAppendEntriesAsync();
+
+        // Assert
+        Assert.NotEqual(1, leader.CommitIndex);
+        Assert.Equal(0, leader.CommitIndex);
+    }
+
+    //17.if a leader does not response from a follower, the leader continues to send the log entries in subsequent heartbeats
+    [Fact]
+    public async Task LeaderContinuesSendingLogEntriesToUnresponsiveFollower()
+    {
+        // Arrange
+        var follower = Substitute.For<IServerNode>();
+        follower.Id.Returns("Follower1");
+
+        var neighbors = new List<IServerNode> { follower };
+        var leader = new ServerNode(true, neighbors);
+        await leader.BecomeLeaderAsync();
+
+        var logEntry1 = new LogEntry(index: 1, term: leader.Term, command: "Command1");
+        var logEntry2 = new LogEntry(index: 2, term: leader.Term, command: "Command2");
+        leader.Log.Add(logEntry1);
+        leader.Log.Add(logEntry2);
+        leader.NextIndex[follower.Id] = 1;
+
+        follower.AppendEntries(
+            Arg.Any<IServerNode>(),
+            Arg.Any<int>(),
+            Arg.Any<List<LogEntry>>(),
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            Arg.Any<int>()
+        ).Returns(false);
+
+        // Act
+        await leader.SendAppendEntriesAsync();
+        await leader.SendAppendEntriesAsync();
+
+        // Assert
+        await follower.Received().AppendEntries(
+            leader,
+            leader.Term,
+            Arg.Is<List<LogEntry>>(entries =>
+                entries.Count == 2 && entries[0].Command == "Command1" && entries[1].Command == "Command2"),
+            leader.CommitIndex,
+            0,
+            0
+        );
+    }
+
+    //18. if a leader cannot commit an entry, it does not send a response to the client
+    [Fact]
+    public async Task LeaderDoesNotSendResponseToClientIfEntryIsNotCommitted()
+    {
+        // Arrange
+        var follower1 = Substitute.For<IServerNode>();
+        follower1.Id.Returns("Follower1");
+
+        var follower2 = Substitute.For<IServerNode>();
+        follower2.Id.Returns("Follower2");
+
+        var neighbors = new List<IServerNode> { follower1, follower2 };
+        var leader = new ServerNode(true, neighbors);
+        await leader.BecomeLeaderAsync();
+
+        var logEntry = new LogEntry(index: 1, term: leader.Term, command: "TestCommand");
+        leader.Log.Add(logEntry);
+
+        follower1.AppendEntries(
+            Arg.Any<IServerNode>(),
+            Arg.Any<int>(),
+            Arg.Any<List<LogEntry>>(),
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            Arg.Any<int>()
+        ).Returns(false);
+
+        follower2.AppendEntries(
+            Arg.Any<IServerNode>(),
+            Arg.Any<int>(),
+            Arg.Any<List<LogEntry>>(),
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            Arg.Any<int>()
+        ).Returns(false);
+
+        string clientResponse = string.Empty;
+        void ClientCallback(string response) => clientResponse = response;
+
+        // Act
+        bool isConfirmed = await leader.ConfirmReplicationAsync(logEntry, ClientCallback);
+
+        // Assert
+        Assert.False(isConfirmed);
+        Assert.Equal(string.Empty, clientResponse);
+    }
+
+    //19. if a node receives an appendentries with a logs that are too far in the future from your local state, you should reject the appendentries
+    [Fact]
+    public async Task FollowerRejectsAppendEntriesWithFutureLogs()
+    {
+        // Arrange
+        var leader = Substitute.For<IServerNode>();
         leader.Term.Returns(1);
+
+        var follower = new ServerNode();
+        follower.Term = 1;
+
+        follower.Log.Add(new LogEntry(index: 1, term: 1, command: "Set x = 10"));
+
+        var leaderLogs = new List<LogEntry>
+        {
+            new LogEntry(index: 5, term: 1, command: "Set y = 20"),
+        };
+        int leaderCommitIndex = 5;
+        int prevLogIndex = 4;
+        int prevLogTerm = 1;
+
+        // Act
+        bool success = await follower.AppendEntries(leader, term: 1, leaderLogs, leaderCommitIndex, prevLogIndex, prevLogTerm);
+
+        // Assert
+        Assert.False(success);
+        Assert.Equal(1, follower.Log.Count);
+        Assert.DoesNotContain(leaderLogs, entry => follower.Log.Contains(entry));
+    }
+    //20. if a node receives and appendentries with a term and index that do not match, you will reject the appendentry until you find a matching log 
+    [Fact]
+    public async Task FollowerRejectsAppendEntriesUntilMatchingLogIsFound()
+    {
+        // Arrange
+        var leader = Substitute.For<IServerNode>();
+        leader.Term.Returns(1);
+
         var follower = new ServerNode();
         follower.Term = 1;
 
@@ -357,12 +685,15 @@ public class Log
             new LogEntry(index: 3, term: 2, command: "Set z = 30"),
         };
         int leaderCommitIndex = 3;
+        int prevLogIndex = 2;
+        int prevLogTerm = 2;
 
         // Act
-        await follower.AppendEntries(leader, term: 1, leaderLogs, leaderCommitIndex);
+        bool success = await follower.AppendEntries(leader, term: 1, leaderLogs, leaderCommitIndex, prevLogIndex, prevLogTerm);
 
         // Assert
-        Assert.NotEqual(3, follower.CommitIndex);
+        Assert.False(success);
+        Assert.Equal(2, follower.Log.Count);
         Assert.DoesNotContain(leaderLogs, entry => follower.Log.Contains(entry));
     }
 }

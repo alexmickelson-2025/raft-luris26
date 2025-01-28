@@ -21,7 +21,7 @@ public interface IServerNode
     Task<bool> ConfirmReplicationAsync(LogEntry logEntry, Action<string> clientCallback);
     Task<(int Term, int LastLogIndex)> RespondToAppendEntriesAsync();
     Task requestRPC(IServerNode sender, string rpcType); //sent
-    Task AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries, int leaderCommitIndex);
+    Task<bool> AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries, int leaderCommitIndex, int prevLogIndex, int prevLogTerm);
     Task ReceiveClientCommandAsync(LogEntry command);
     Task SendAppendEntriesAsync();
     void respondRPC(); //receive
