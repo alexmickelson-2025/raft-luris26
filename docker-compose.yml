@@ -1,0 +1,8 @@
+# services:
+#   node1:
+#     image: imageName
+#   node2:
+#     image: imageName
+
+#   node3:
+#     image: imageName

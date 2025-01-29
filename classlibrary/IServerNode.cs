@@ -15,6 +15,7 @@ public interface IServerNode
     public List<LogEntry> Log { get; set; }
     public int CommitIndex { get; set; }
     public Dictionary<string, int> NextIndex { get; set; }
+    Dictionary<string, string> StateMachine { get;set;}
     void ApplyLogEntry(LogEntry entry);
     void ApplyCommittedLogs();
     Task ReceiveConfirmationFromFollower(string followerId, int logIndex);
@@ -22,7 +23,7 @@ public interface IServerNode
     Task<(int Term, int LastLogIndex)> RespondToAppendEntriesAsync();
     Task requestRPC(IServerNode sender, string rpcType); //sent
     Task<bool> AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries, int leaderCommitIndex, int prevLogIndex, int prevLogTerm);
-    Task ReceiveClientCommandAsync(LogEntry command);
+    Task<bool> ReceiveClientCommandAsync(LogEntry command);
     Task SendAppendEntriesAsync();
     void respondRPC(); //receive
     Task<bool> RequestVoteAsync(IServerNode candidate, int term);
@@ -33,4 +34,5 @@ public interface IServerNode
     // Simulation control
     void StartSimulationLoop();
     void StopSimulationLoop();
+    void ApplyCommand(string key, string value);
 }

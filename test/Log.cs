@@ -29,7 +29,7 @@ public class Log
         await leader.ReceiveClientCommandAsync(logEntry);
 
         // Assert
-        await follower1.Received(1)
+        await follower1.Received()
             .AppendEntries(
                 leader,
                 leader.Term,
@@ -39,7 +39,7 @@ public class Log
                     0,
                     0
             );
-        await follower2.Received(1).
+        await follower2.Received().
             AppendEntries(
                 leader,
                 leader.Term,

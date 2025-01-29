@@ -23,7 +23,7 @@ else
 </div>
 <div class="mt-3">
     <label>
-        Election Timeout Multiplier: timeoutMultiplier
+        Election Timeout Multiplier: @timeoutMultiplier
         <input type="range" min="1" max="10" step="1" @bind="timeoutMultiplier" />
     </label>
 </div>
@@ -39,20 +39,93 @@ else
                     <p><strong>Status:</strong> <span class="@GetStateClass(node)">@node.State</span></p>
                     <p><strong>Term:</strong> @node.Term</p>
                     <p><strong>Leader:</strong> @(node.GetCurrentLeader()?.Id ?? "None")</p>
+
+                    <!-- Mostrar el índice de confirmación -->
+                    <p><strong>Commit Index:</strong> @node.InnerNode.CommitIndex</p>
+
+                    <!-- Mostrar el estado de la máquina de estado -->
+                    <p><strong>State Machine:</strong></p>
+                    <ul>
+                        @foreach (var kvp in node.InnerNode.StateMachine)
+                        {
+                            <li>@kvp.Key: @kvp.Value</li>
+                        }
+                    </ul>
+
+                    <!-- Mostrar el Log Journal -->
+                    <p><strong>Log Entries:</strong></p>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Index</th>
+                                <th>Term</th>
+                                <th>Command</th>
+                                <th>Committed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var entry in node.InnerNode.Log)
+                            {
+                                <tr>
+                                    <td>@entry.Index</td>
+                                    <td>@entry.Term</td>
+                                    <td>@entry.Command</td>
+                                    <td>@(entry.Index <= node.InnerNode.CommitIndex ? "✔️" : "❌")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
                     <div class="progress mt-2" role="progressbar">
-                        <div class="progress-bar" role="progressbar" style="width: @(CalculateTimeoutProgress(node))%" aria-valuenow="@(CalculateTimeoutProgress(node))" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div class="progress-bar" role="progressbar" style="width: @(CalculateTimeoutProgress(node))%"
+                            aria-valuenow="@(CalculateTimeoutProgress(node))" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                 </div>
             </div>
         }
     </div>
 }
+
+<!--forms -->
+<div class="mt-4 p-3 border rounded">
+    <h4>Send Command</h4>
+    <div class="mb-2">
+        <label>Select Node:</label>
+        <select @bind="selectedNodeId" class="form-select">
+            @foreach (var node in nodes)
+            {
+                <option value="@node.Id">@node.Id</option>
+            }
+        </select>
+    </div>
+    <div class="mb-2">
+        <label>Key:</label>
+        <input type="text" @bind="commandKey" class="form-control" />
+    </div>
+    <div class="mb-2">
+        <label>Value:</label>
+        <input type="text" @bind="commandValue" class="form-control" />
+    </div>
+    <button class="btn btn-primary" @onclick="SendCommand">Send</button>
+</div>
+
+<!-- answer -->
+@if (!string.IsNullOrEmpty(commandResponse))
+{
+    <div class="mt-3 alert alert-info">@commandResponse</div>
+}
+
 @code {
     List<SimulationNode>? nodes = new();
     private bool isRunning = false;
     private Timer? timer;
     private int networkDelay = 200;
     private int timeoutMultiplier = 1;
+
+    private string selectedNodeId;
+    private string commandKey;
+    private string commandValue;
+    private string commandResponse;
 
     void startSimulation()
     {
@@ -70,6 +143,9 @@ else
 
         nodes = new List<SimulationNode> { simulationNode1, simulationNode2, simulationNode3 };
 
+        node1.State = NodeState.Leader;
+        node1.Term = 1;
+
         foreach (var node in nodes)
         {
             node.InnerNode.SetTimeoutMultiplier(timeoutMultiplier);
@@ -78,11 +154,34 @@ else
 
         isRunning = true;
 
+        timer?.Dispose();
+
         timer = new Timer(_ =>
         {
             InvokeAsync(StateHasChanged);
-        }, null, 0, 200);
+        }, null, 0, 500);
+
         StateHasChanged();
+    }
+
+
+    async Task SendCommand()
+    {
+        var selectedNode = nodes.FirstOrDefault(n => n.Id == selectedNodeId);
+        if (selectedNode != null)
+        {
+            var newLogEntry = new LogEntry
+            (
+            index: selectedNode.InnerNode.Log.Count + 1,
+            term: selectedNode.InnerNode.Term,
+            command: commandValue
+            );
+
+            bool success = await selectedNode.InnerNode.ReceiveClientCommandAsync(newLogEntry);
+
+            commandResponse = success ? $"Command '{commandValue}' applied successfully!" : "Command rejected (not a leader)";
+            StateHasChanged();
+        }
     }
 
     void StopSimulation()

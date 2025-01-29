@@ -32,7 +32,21 @@ public class ServerNode : IServerNode
     public int LastApplied { get; set; }
     private const int MaxRetries = 3;
     private Dictionary<string, int> RetryCounts = new();
+    private readonly Dictionary<string, string> _stateMachine = new();
+    public Dictionary<string, string> StateMachine => _stateMachine;
 
+    Dictionary<string, string> IServerNode.StateMachine
+    {
+        get => _stateMachine;
+        set
+        {
+            _stateMachine.Clear();
+            foreach (var kvp in value)
+            {
+                _stateMachine[kvp.Key] = kvp.Value;
+            }
+        }
+    }
     public ServerNode()
     {
         _neighbors = new List<IServerNode>();
@@ -59,6 +73,10 @@ public class ServerNode : IServerNode
         Log = new List<LogEntry>();
 
         StartElectionTimer();
+    }
+    public void ApplyCommand(string key, string value)
+    {
+        _stateMachine[key] = value;
     }
 
     public async Task requestRPC(IServerNode sender, string rpcType)
@@ -280,18 +298,40 @@ public class ServerNode : IServerNode
         _timeoutMultiplier = multiplier;
     }
 
-    public async Task ReceiveClientCommandAsync(LogEntry command)
+    public async Task<bool> ReceiveClientCommandAsync(LogEntry command)
     {
         if (State != NodeState.Leader)
         {
-            throw new InvalidOperationException("Only the leader can process client commands.");
+            return false;
         }
+
         Log.Add(command);
-        var appendTasks = _neighbors.Select(neighbor =>
-            neighbor.AppendEntries(this, Term, new List<LogEntry> { command }, 0, 0, 0)
-        );
-        await Task.WhenAll(appendTasks);
+
+        var appendTasks = _neighbors.Select(async neighbor =>
+        {
+            try
+            {
+                return await neighbor.AppendEntries(this, Term, new List<LogEntry> { command }, CommitIndex, Log.Count - 1, Term);
+            }
+            catch
+            {
+                return false;
+            }
+        });
+
+        var results = await Task.WhenAll(appendTasks);
+        int successfulReplications = results.Count(success => success);
+
+        int majority = (_neighbors.Count / 2) + 1;
+        if (successfulReplications >= majority)
+        {
+            CommitIndex = command.Index;
+            return true;
+        }
+
+        return false;
     }
+
 
     public async Task UpdateNextIndexAsync(string followerId, int nextIndex)
     {
