@@ -40,10 +40,8 @@ else
                     <p><strong>Term:</strong> @node.Term</p>
                     <p><strong>Leader:</strong> @(node.GetCurrentLeader()?.Id ?? "None")</p>
 
-                    <!-- Mostrar el índice de confirmación -->
                     <p><strong>Commit Index:</strong> @node.InnerNode.CommitIndex</p>
 
-                    <!-- Mostrar el estado de la máquina de estado -->
                     <p><strong>State Machine:</strong></p>
                     <ul>
                         @foreach (var kvp in node.InnerNode.StateMachine)
@@ -52,7 +50,6 @@ else
                         }
                     </ul>
 
-                    <!-- Mostrar el Log Journal -->
                     <p><strong>Log Entries:</strong></p>
                     <table class="table">
                         <thead>
@@ -170,16 +167,24 @@ else
         var selectedNode = nodes.FirstOrDefault(n => n.Id == selectedNodeId);
         if (selectedNode != null)
         {
-            var newLogEntry = new LogEntry
-            (
-            index: selectedNode.InnerNode.Log.Count + 1,
-            term: selectedNode.InnerNode.Term,
-            command: commandValue
-            );
+            var leaderNode = nodes.FirstOrDefault(n => n.State == NodeState.Leader);
+            if (leaderNode == null)
+            {
+                commandResponse = "No leader available, cannot process command.";
+            }
+            else
+            {
+                var newLogEntry = new LogEntry
+                (
+                index: leaderNode.InnerNode.Log.Count + 1,
+                term: leaderNode.InnerNode.Term,
+                command: commandValue
+                );
 
-            bool success = await selectedNode.InnerNode.ReceiveClientCommandAsync(newLogEntry);
+                bool success = await leaderNode.InnerNode.ReceiveClientCommandAsync(newLogEntry);
 
-            commandResponse = success ? $"Command '{commandValue}' applied successfully!" : "Command rejected (not a leader)";
+                commandResponse = success ? $"Command '{commandValue}' applied successfully!" : "Command rejected";
+            }
             StateHasChanged();
         }
     }

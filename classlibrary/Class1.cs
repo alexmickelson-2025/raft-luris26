@@ -17,7 +17,7 @@ public class ServerNode : IServerNode
     public bool SimulationRunning { get; set; }
     private Random _random;
     public List<IServerNode> _neighbors { get; set; }
-    private Timer? _heartbeatTimer { get; set; }
+    private System.Timers.Timer? _heartbeatTimer { get; set; }
     private Timer? _electionTimer { get; set; }
     public NodeState State { get; set; }
     public IServerNode _innerNode { get; set; }
@@ -34,6 +34,7 @@ public class ServerNode : IServerNode
     private Dictionary<string, int> RetryCounts = new();
     private readonly Dictionary<string, string> _stateMachine = new();
     public Dictionary<string, string> StateMachine => _stateMachine;
+
 
     Dictionary<string, string> IServerNode.StateMachine
     {
@@ -55,6 +56,8 @@ public class ServerNode : IServerNode
         _random = new Random();
         Id = Guid.NewGuid().ToString();
         Log = new List<LogEntry>();
+        _stateMachine["1"] = "value1 test luris default";
+        _stateMachine["2"] = "value2 test";
     }
 
     public ServerNode(bool vote, List<IServerNode> neighbors = null, int heartbeatInterval = 50, string id = null)
@@ -116,6 +119,10 @@ public class ServerNode : IServerNode
 
     public async Task StartElectionAsync()
     {
+        if (State == NodeState.Leader)
+        {
+            return;
+        }
         if (State == NodeState.Follower || State == NodeState.Candidate)
         {
             Term++;
@@ -136,6 +143,7 @@ public class ServerNode : IServerNode
             else
             {
                 StartElectionTimer();
+                ResetElectionTimer();
             }
         }
     }
@@ -220,7 +228,6 @@ public class ServerNode : IServerNode
 
         if (term < Term)
         {
-            Console.WriteLine("AppendEntries rechazado: término desactualizado.");
             return false;
         }
 
@@ -228,27 +235,25 @@ public class ServerNode : IServerNode
         {
             if (prevLogIndex > Log.Count)
             {
-                Console.WriteLine($"AppendEntries rechazado: prevLogIndex {prevLogIndex} está fuera de rango. Log.Count = {Log.Count}");
                 return false;
             }
 
             if (Log[prevLogIndex - 1].Term != prevLogTerm)
             {
-                Console.WriteLine($"AppendEntries rechazado: inconsistencia de términos en prevLogIndex {prevLogIndex}. Buscando coincidencia...");
                 return false;
             }
         }
 
-        if (term > Term)
+        if (term >= Term)
         {
             Term = term;
             _innerNode = leader;
             State = NodeState.Follower;
+            ResetElectionTimer();
         }
 
         ProcessLogEntries(logEntries);
         UpdateCommitIndexAndApplyEntries(leaderCommitIndex);
-        ResetElectionTimer();
         return true;
     }
 
@@ -280,6 +285,7 @@ public class ServerNode : IServerNode
                 LastApplied = i;
             }
         }
+        ApplyCommittedLogs();
     }
     public void ApplyLogEntry(LogEntry entry)
     {
@@ -326,6 +332,7 @@ public class ServerNode : IServerNode
         if (successfulReplications >= majority)
         {
             CommitIndex = command.Index;
+            ApplyLogEntry(command);
             return true;
         }
 
