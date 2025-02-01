@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:9.0
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
 
 RUN apt-get update && \
     apt-get install -y curl && \
@@ -10,3 +10,5 @@ RUN groupadd -g 1000 developer && \
     chown -R developer:developer /home/developer
 
 USER developer:developer
+
+WORKDIR /app

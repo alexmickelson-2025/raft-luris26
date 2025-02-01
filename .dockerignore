@@ -1,8 +1,8 @@
-.vscode
-bin/
-obj/
-Dockerfile
-de.Dockerfile
-docker-compose.yml
-.gitignore
-Readme.md
+# .vscode
+# bin/
+# obj/
+# Dockerfile
+# de.Dockerfile
+# docker-compose.yml
+# .gitignore
+# Readme.md

@@ -8,19 +8,19 @@
     "net8.0": []
   },
   "packageFolders": {
-    "C:\\Users\\luris\\.nuget\\packages\\": {}
+    "/home/developer/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\luris\\Desktop\\raft-luris26\\classlibrary\\classlibrary.csproj",
+      "projectUniqueName": "/app/classlibrary/classlibrary.csproj",
       "projectName": "classlibrary",
-      "projectPath": "C:\\Users\\luris\\Desktop\\raft-luris26\\classlibrary\\classlibrary.csproj",
-      "packagesPath": "C:\\Users\\luris\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\luris\\Desktop\\raft-luris26\\classlibrary\\obj\\",
+      "projectPath": "/app/classlibrary/classlibrary.csproj",
+      "packagesPath": "/home/developer/.nuget/packages/",
+      "outputPath": "/app/classlibrary/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\luris\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "/home/developer/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -64,7 +64,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.402/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.405/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

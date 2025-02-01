@@ -2,57 +2,68 @@ services:
   node1:
     build:
       context: .
-      dockerfile: dev.Dockerfile
-    working_dir: /app
+      dockerfile: Dockerfile
+    working_dir: /app/api
     user: 1000:100
     volumes:
-      - ./:/app
+      - ./api:/app/api
+      - ./classlibrary:/app/classlibrary
     environment:
       - NODE_ID=1
-      - OTHER_NODES=2,http://node2:8080;3,http://node3:8080
+      - OTHER_NODES=2,http://node2:5000;3,http://node3:5000
       - NODE_INTERVAL_SCALAR=50
-    command: dotnet watch --project RaftRestApi
+    command: dotnet watch --project raft-luris26.csproj
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 10s
       timeout: 3s
       retries: 3
       start_period: 3s
+    ports:
+      - "5001:5000"
+
   node2:
     build:
       context: .
-      dockerfile: dev.Dockerfile
-    working_dir: /app
+      dockerfile: Dockerfile
+    working_dir: /app/api
     user: 1000:100
     volumes:
-      - ./:/app
+      - ./api:/app/api
+      - ./classlibrary:/app/classlibrary
     environment:
       - NODE_ID=2
-      - OTHER_NODES=1,http://node1:8080;3,http://node3:8080
+      - OTHER_NODES=1,http://node1:5000;3,http://node3:5000
       - NODE_INTERVAL_SCALAR=50
-    command: dotnet watch --project RaftRestApi
+    command: dotnet watch --project raft-luris26.csproj
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 10s
       timeout: 3s
       retries: 3
       start_period: 3s
+    ports:
+      - "5002:5000"
+
   node3:
     build:
       context: .
-      dockerfile: dev.Dockerfile
-    working_dir: /app
+      dockerfile: Dockerfile
+    working_dir: /app/api
     user: 1000:100
     volumes:
-      - ./:/app
+      - ./api:/app/api
+      - ./classlibrary:/app/classlibrary
     environment:
       - NODE_ID=3
-      - OTHER_NODES=1,http://node1:8080;2,http://node2:8080
+      - OTHER_NODES=1,http://node1:5000;2,http://node2:5000
       - NODE_INTERVAL_SCALAR=50
-    command: dotnet watch --project RaftRestApi
+    command: dotnet watch --project raft-luris26.csproj
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 10s
       timeout: 3s
       retries: 3
       start_period: 3s
+    ports:
+      - "5003:5000"
