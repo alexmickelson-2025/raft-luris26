@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaftSimulation", "RaftSimul
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "raft-luris26", "api\raft-luris26.csproj", "{9EFE8223-D74C-4B36-B659-088EF6CD38F2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "raftClient", "raftClient\raftClient.csproj", "{5D8951EB-E454-4FDB-A6E7-722817F52B40}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{9EFE8223-D74C-4B36-B659-088EF6CD38F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9EFE8223-D74C-4B36-B659-088EF6CD38F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9EFE8223-D74C-4B36-B659-088EF6CD38F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D8951EB-E454-4FDB-A6E7-722817F52B40}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D8951EB-E454-4FDB-A6E7-722817F52B40}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D8951EB-E454-4FDB-A6E7-722817F52B40}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D8951EB-E454-4FDB-A6E7-722817F52B40}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

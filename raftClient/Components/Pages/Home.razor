@@ -1,0 +1,92 @@
+﻿@page "/home"
+@rendermode InteractiveServer
+@using System.Collections.Concurrent
+
+<PageTitle>Raft Cluster</PageTitle>
+
+<h1>Raft Cluster Status</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>Node URL</th>
+            <th>Status</th>
+            <th>Term</th>
+            <th>Leader</th>
+            <th>Send Command</th>
+            <th>Logs</th>
+        </tr>
+    </thead>
+    <tbody>
+        <h1>checkando</h1>
+        @foreach (var node in data)
+        {
+            <tr>
+                <td>@node.Key</td>
+                <td>@(node.Value != null ? "✅ Running" : "❌ Down")</td>
+                <td>@node.Value?.Term</td>
+                <td>@node.Value?.CurrentLiderID</td>
+                <td>
+                    <button @onclick="() => SendCommand(node.Key)">Send Command</button>
+                </td>
+                <td>
+                    <pre>@(node.Value?.Log != null ? string.Join("\n", node.Value.Log) : "No logs")</pre>
+                </td>
+
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    string[] Urls = Environment.GetEnvironmentVariable("NODE_URL")?.Split(',') ?? new string[0];
+    ConcurrentDictionary<string, NodeData> data = new();
+    private Timer? timer;
+    HttpClient client = new();
+
+    protected override void OnInitialized()
+    {
+        timer = new Timer(async _ =>
+        {
+            await FetchData();
+            await InvokeAsync(StateHasChanged);
+        }, null, 0, 2000);
+    }
+
+    private async Task FetchData()
+    {
+        await Task.WhenAll(Urls.Select(async url =>
+        {
+            try
+            {
+                var response = await client.GetAsync(url + "/nodeInfo");
+                if (response.IsSuccessStatusCode)
+                {
+                    var nodeData = await response.Content.ReadFromJsonAsync<NodeData>();
+                    if (nodeData != null)
+                    {
+                        data[url] = nodeData;
+                    }
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                Console.WriteLine($"Error fetching data from {url}: {ex.Message}");
+                data[url] = null;
+            }
+        }).ToArray());
+    }
+
+    private async Task SendCommand(string nodeUrl)
+    {
+        var command = new
+        {
+            Term = 1,
+            LeaderId = 1,
+            Entries = new[] { new { Index = 1, Term = 1, Command = "Set x = 5" } },
+            LeaderCommit = 0
+        };
+        await client.PostAsJsonAsync(nodeUrl + "/request/appendEntries", command);
+    }
+
+}

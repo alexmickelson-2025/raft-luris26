@@ -3,11 +3,14 @@ builder.WebHost.UseUrls("http://0.0.0.0:5000");
 
 var app = builder.Build();
 
-
 var nodeId = Environment.GetEnvironmentVariable("NODE_ID") ?? throw new Exception("NODE_ID environment variable not set");
-var otherNodesRaw = Environment.GetEnvironmentVariable("OTHER_NODES") ?? throw new Exception("OTHER_NODES environment variable not set");
-
+var otherNodesRaw = Environment.GetEnvironmentVariable("OTHER_NODES") ?? throw new Exception("OTHER_URL environment variable not set");
+var nodeInternalScalarRaw = Environment.GetEnvironmentVariable("NODE_INTERVAL") ?? throw new Exception("NODE_INTERVAL environment variable not set");
 var nodeLogger = app.Services.GetRequiredService<ILogger<HttpRpcOtherNode>>();
+
+
+var ServicesName = nodeId + "#Node";
+List<string> logs = new();
 
 var otherNodes = otherNodesRaw.Split(";").Select(nodeInfo =>
 {
@@ -16,6 +19,27 @@ var otherNodes = otherNodesRaw.Split(";").Select(nodeInfo =>
     string url = parts[1];
     return new HttpRpcOtherNode(id, url, nodeLogger);
 }).ToList();
+
+app.MapGet("/nodeInfo", () =>
+{
+    var nodeInfo = new
+    {
+        NodeId = nodeId,
+        Term = 1,
+        CurrentLeaderId = 1,
+        OtherNodes = otherNodes.Select(n => new { Id = n.Id, Url = n.Url }).ToList(),
+        NodeInterval = nodeInternalScalarRaw,
+        Log = logs.ToArray()
+    };
+
+    return Results.Json(nodeInfo);
+});
+app.MapPost("/log", (string message) =>
+{
+    logs.Add(message);
+    return Results.Ok();
+});
+
 
 app.MapGet("/health", () => "healthy");
 var logger = app.Services.GetRequiredService<ILogger<Program>>();

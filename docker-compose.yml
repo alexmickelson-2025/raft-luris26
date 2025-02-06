@@ -11,7 +11,7 @@ services:
     environment:
       - NODE_ID=1
       - OTHER_NODES=2,http://node2:5000;3,http://node3:5000
-      - NODE_INTERVAL_SCALAR=50
+      - NODE_INTERVAL=50
     command: dotnet watch --project raft-luris26.csproj
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
@@ -34,7 +34,7 @@ services:
     environment:
       - NODE_ID=2
       - OTHER_NODES=1,http://node1:5000;3,http://node3:5000
-      - NODE_INTERVAL_SCALAR=50
+      - NODE_INTERVAL=50
     command: dotnet watch --project raft-luris26.csproj
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
@@ -57,7 +57,7 @@ services:
     environment:
       - NODE_ID=3
       - OTHER_NODES=1,http://node1:5000;2,http://node2:5000
-      - NODE_INTERVAL_SCALAR=50
+      - NODE_INTERVAL=50
     command: dotnet watch --project raft-luris26.csproj
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
@@ -67,3 +67,18 @@ services:
       start_period: 3s
     ports:
       - "5003:5000"
+  
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /app
+    user: 1000:100
+    volumes:
+      - ./raftClient:/app/raftClient
+      - ./classlibrary:/app/classlibrary
+    environment:
+      - NODE_URL=http://node1:5000,http://node2:5000,http://node3:5000
+    command: dotnet watch --project raftClient
+    ports:
+      - "5004:5000"  
