@@ -3,11 +3,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    working_dir: /app/api
-    user: 1000:100
-    volumes:
-      - ./api:/app/api
-      - ./classlibrary:/app/classlibrary
+    # working_dir: /app/api
+    # user: 1000:100
+    # volumes:
+    #   - ./api:/app/api
+    #   - ./classlibrary:/app/classlibrary
     environment:
       - NODE_ID=1
       - OTHER_NODES=2,http://node2:5000;3,http://node3:5000
@@ -28,11 +28,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    working_dir: /app/api
-    user: 1000:100
-    volumes:
-      - ./api:/app/api
-      - ./classlibrary:/app/classlibrary
+    # working_dir: /app/api
+    # user: 1000:100
+    # volumes:
+    #   - ./api:/app/api
+    #   - ./classlibrary:/app/classlibrary
     environment:
       - NODE_ID=2
       - OTHER_NODES=1,http://node1:5000;3,http://node3:5000
@@ -53,11 +53,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    working_dir: /app/api
-    user: 1000:100
-    volumes:
-      - ./api:/app/api
-      - ./classlibrary:/app/classlibrary
+    # working_dir: /app/api
+    # user: 1000:100
+    # volumes:
+    #   - ./api:/app/api
+    #   - ./classlibrary:/app/classlibrary
     environment:
       - NODE_ID=3
       - OTHER_NODES=1,http://node1:5000;2,http://node2:5000
@@ -78,17 +78,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    working_dir: /app
-    user: 1000:100
+    # working_dir: /app
+    # user: 1000:100
     networks:
       - raft_network
     depends_on:
       - node1
       - node2
       - node3
-    volumes:
-      - ./raftClient:/app/raftClient
-      - ./classlibrary:/app/classlibrary
+    # volumes:
+    #   - ./raftClient:/app/raftClient
+    #   - ./classlibrary:/app/classlibrary
     environment:
       - NODE_URL=http://node1:5000,http://node2:5000,http://node3:5000
     command: dotnet watch --project raftClient
