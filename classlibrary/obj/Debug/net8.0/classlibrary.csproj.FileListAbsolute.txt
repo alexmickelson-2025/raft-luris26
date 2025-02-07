@@ -21,3 +21,4 @@ C:/Users/luris/Desktop/raft-luris26/classlibrary/obj/Debug/net8.0/ref/classlibra
 /app/classlibrary/obj/Debug/net8.0/classlibrary.pdb
 /app/classlibrary/obj/Debug/net8.0/ref/classlibrary.dll
 /app/classlibrary/obj/Debug/net8.0/refint/classlibrary.dll
+/app/classlibrary/obj/Debug/net8.0/classlibrary.sourcelink.json

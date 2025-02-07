@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:9.0
+FROM mcr.microsoft.com/dotnet/sdk:8.0
  
 RUN apt-get update && \
     apt-get install -y curl && \
@@ -9,4 +9,4 @@ WORKDIR /app
  
 COPY . /app
  
-CMD dotnet run --project raft-luris26
+CMD dotnet run --project api
