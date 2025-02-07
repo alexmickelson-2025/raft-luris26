@@ -6,6 +6,7 @@ public class HttpRpcOtherNode
     private HttpClient client = new();
     public string Url { get; }
     private readonly ILogger<HttpRpcOtherNode> _logger;
+    public List<string> Logs { get; private set; } = new();
     public HttpRpcOtherNode(int id, string url, ILogger<HttpRpcOtherNode> logger)
     {
         Id = id;
@@ -64,6 +65,18 @@ public class HttpRpcOtherNode
         catch (HttpRequestException)
         {
             Console.WriteLine($"node {Url} is down");
+        }
+    }
+    public async Task SendCommandAsync(string command)
+    {
+        try
+        {
+            Logs.Add($"Received command: {command}");
+            await client.PostAsJsonAsync($"{Url}/request/command", command);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError($"Error sending command: {ex.Message}");
         }
     }
 

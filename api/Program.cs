@@ -1,5 +1,11 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using classlibrary;
+using Microsoft.AspNetCore.DataProtection;
+
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://0.0.0.0:5000");
+
 
 var app = builder.Build();
 
@@ -10,54 +16,73 @@ var nodeLogger = app.Services.GetRequiredService<ILogger<HttpRpcOtherNode>>();
 
 
 var ServicesName = nodeId + "#Node";
-List<string> logs = new();
+List<IServerNode> otherNodes = otherNodesRaw
+    .Split(";")
+    .Select(s => new ServerNode(vote: false, id: s.Split(",")[0]))
+    .ToList<IServerNode>();
 
-var otherNodes = otherNodesRaw.Split(";").Select(nodeInfo =>
-{
-    var parts = nodeInfo.Split(",");
-    int id = int.Parse(parts[0]);
-    string url = parts[1];
-    return new HttpRpcOtherNode(id, url, nodeLogger);
-}).ToList();
+var node = new ServerNode(vote: false, neighbors: otherNodes, id: nodeId);
+node.StartSimulationLoop();
 
-app.MapGet("/nodeInfo", () =>
+app.MapGet("/", () => "raft");
+
+app.MapGet("/nodeData", () =>
 {
-    var nodeInfo = new
+    return Results.Json(new
     {
-        NodeId = nodeId,
-        Term = 1,
-        CurrentLeaderId = 1,
-        OtherNodes = otherNodes.Select(n => new { Id = n.Id, Url = n.Url }).ToList(),
-        NodeInterval = nodeInternalScalarRaw,
-        Log = logs.ToArray()
-    };
-
-    return Results.Json(nodeInfo);
+        Id = node.Id,
+        State = node.State.ToString(),
+        // ElectionTimeout = node.ElectionTimeout.TotalMilliseconds,
+        Term = node.Term,
+        CurrentTermLeader = node.GetCurrentLeader()?.Id ?? "None",
+        CommittedEntryIndex = node.CommitIndex,
+        Logs = node.Log
+    }, new JsonSerializerOptions
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter() }
+    });
 });
-app.MapPost("/log", (string message) =>
+
+
+// Receive RPC request
+app.MapPost("/request/appendEntries", async (AppendEntriesData request) =>
 {
-    logs.Add(message);
+    await node.AppendEntries(request);
     return Results.Ok();
 });
 
-
-app.MapGet("/health", () => "healthy");
-var logger = app.Services.GetRequiredService<ILogger<Program>>();
-app.MapGet("/", () => "Raft Node is Running!");
-app.MapGet("/node", () => $"Raft Node {nodeId} is Running!");
-
-app.MapPost("/request/appendEntries", async (AppendEntriesData data) =>
+//Receive `RequestVote` RPC request
+app.MapPost("/request/vote", async (VoteRequestData request) =>
 {
-    logger.LogInformation($"Received AppendEntries request from Leader {data.leader}");
-
-    return Results.Ok(new { Success = true, Term = data.term });
+    bool voteGranted = await node.RequestVoteAsync(request);
+    return Results.Ok(new { VoteGranted = voteGranted, Term = node.Term });
 });
 
-app.MapPost("/request/vote", async (VoteRequestData data) =>
+// Receive `AppendEntries` response
+app.MapPost("/response/appendEntries", async (RespondEntriesData response) =>
 {
-    logger.LogInformation($"Received VoteRequest from Candidate {data.Candidate} for Term {data.term}");
-
-    return Results.Ok(new { VoteGranted = true, Term = data.term });
+    await node.RespondToAppendEntriesAsync(response);
+    return Results.Ok();
 });
-app.UseHttpsRedirection();
+
+// Receive `RequestVote` response
+app.MapPost("/response/vote", async (VoteResponseData response) =>
+{
+    node.respondRPC(response);
+    return Results.Ok();
+});
+
+//Send command to leader
+app.MapPost("/request/command", async (LogEntry command) =>
+{
+    bool success = await node.ReceiveClientCommandAsync(command);
+    return Results.Ok(new { Success = success });
+});
+app.MapGet("/logs", () =>
+{
+    return Results.Json(new { NodeId = node.Id, Logs = node.GetLogEntries() });
+});
+
+// app.UseHttpsRedirection();
 app.Run();

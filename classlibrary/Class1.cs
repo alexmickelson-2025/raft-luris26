@@ -104,7 +104,8 @@ public class ServerNode : IServerNode
             State = NodeState.Follower;
             _innerNode = sender;
             ResetElectionTimer();
-            sender.respondRPC();
+            var response = new VoteResponseData();
+            sender.respondRPC(response);
         }
     }
 
@@ -159,7 +160,7 @@ public class ServerNode : IServerNode
         return _random.Next(150, 301) * _timeoutMultiplier;
     }
 
-    public void respondRPC()
+    public void respondRPC(VoteResponseData response)
     {
         Console.WriteLine("Received RPC");
     }
@@ -247,6 +248,24 @@ public class ServerNode : IServerNode
         {
             return false;
         }
+        foreach (var entry in data.logEntries)
+        {
+            if (!Log.Any(e => e.Index == entry.Index && e.Term == entry.Term))
+            {
+                Log.Add(entry);
+            }
+        }
+        if (data.term > Term || State == NodeState.Candidate)
+        {
+            Term = data.term;
+            _innerNode = data.leader;
+            State = NodeState.Follower;
+            ResetElectionTimer();
+        }
+        if (data.leaderCommitIndex > CommitIndex)
+        {
+            CommitIndex = Math.Min(data.leaderCommitIndex, Log.Count);
+        }
 
         if (data.prevLogIndex > 0)
         {
@@ -310,7 +329,7 @@ public class ServerNode : IServerNode
         Console.WriteLine($"Applying log entry");
     }
 
-    void IServerNode.StartSimulationLoop()
+    public void StartSimulationLoop()
     {
         SimulationRunning = true;
         StartElectionTimer();
@@ -323,12 +342,12 @@ public class ServerNode : IServerNode
 
     public async Task<bool> ReceiveClientCommandAsync(LogEntry command)
     {
+        Log.Add(command);
         if (State != NodeState.Leader)
         {
             return false;
         }
 
-        Log.Add(command);
 
         var appendTasks = _neighbors.Select(async neighbor =>
         {
@@ -446,7 +465,7 @@ public class ServerNode : IServerNode
         await Task.CompletedTask;
     }
 
-    public async Task<(int Term, int LastLogIndex)> RespondToAppendEntriesAsync()
+    public async Task<(int Term, int LastLogIndex)> RespondToAppendEntriesAsync(RespondEntriesData response)
     {
         await Task.Delay(10);
         int lastLogIndex = Log.Count > 0 ? Log[^1].Index : 0;
@@ -485,7 +504,7 @@ public class ServerNode : IServerNode
         if (acknowledgements >= majority)
         {
             CommitIndex = logEntry.Index;
-            clientCallback?.Invoke($"Log entry {logEntry.Index} comfirt.");
+            clientCallback?.Invoke($"Log entry {logEntry.Index} confirmed.");
             return true;
         }
 
@@ -499,5 +518,9 @@ public class ServerNode : IServerNode
             ApplyLogEntry(entryToApply);
             LastApplied++;
         }
+    }
+    public List<string> GetLogEntries()
+    {
+        return Log.Select(entry => $"Index: {entry.Index}, Term: {entry.Term}, Command: {entry.Command}").ToList();
     }
 }

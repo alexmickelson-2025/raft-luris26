@@ -21,6 +21,8 @@ services:
       start_period: 3s
     ports:
       - "5001:5000"
+    networks:
+      - raft_network
 
   node2:
     build:
@@ -44,6 +46,8 @@ services:
       start_period: 3s
     ports:
       - "5002:5000"
+    networks:
+      - raft_network
 
   node3:
     build:
@@ -67,6 +71,8 @@ services:
       start_period: 3s
     ports:
       - "5003:5000"
+    networks:
+      - raft_network
   
   client:
     build:
@@ -74,6 +80,12 @@ services:
       dockerfile: Dockerfile
     working_dir: /app
     user: 1000:100
+    networks:
+      - raft_network
+    depends_on:
+      - node1
+      - node2
+      - node3
     volumes:
       - ./raftClient:/app/raftClient
       - ./classlibrary:/app/classlibrary
@@ -82,3 +94,6 @@ services:
     command: dotnet watch --project raftClient
     ports:
       - "5004:5000"  
+networks:
+  raft_network:
+    driver: bridge

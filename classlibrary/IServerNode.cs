@@ -20,12 +20,12 @@ public interface IServerNode
     void ApplyCommittedLogs();
     Task ReceiveConfirmationFromFollower(string followerId, int logIndex);
     Task<bool> ConfirmReplicationAsync(LogEntry logEntry, Action<string> clientCallback);
-    Task<(int Term, int LastLogIndex)> RespondToAppendEntriesAsync();
+    Task<(int Term, int LastLogIndex)> RespondToAppendEntriesAsync(RespondEntriesData response);
     Task requestRPC(IServerNode sender, string rpcType); //sent
     Task<bool> AppendEntries(AppendEntriesData request);
     Task<bool> ReceiveClientCommandAsync(LogEntry command);
     Task SendAppendEntriesAsync();
-    void respondRPC(); //receive
+    void respondRPC(VoteResponseData response); //receive
     Task<bool> RequestVoteAsync(VoteRequestData request);
     void SetNeighbors(List<IServerNode> neighbors);
     public Task UpdateNextIndexAsync(string followerId, int nextIndex);

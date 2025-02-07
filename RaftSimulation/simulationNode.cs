@@ -58,14 +58,14 @@ public class SimulationNode : IServerNode
         set => throw new NotImplementedException();
     }
 
-    public Task<bool> AppendEntries(IServerNode leader, int term, List<LogEntry> logEntries, int leaderCommitIndex, int prevLogIndex, int prevLogTerm)
+    public Task<bool> AppendEntries(AppendEntriesData request)
     {
-        return ((IServerNode)InnerNode).AppendEntries(leader, term, logEntries, leaderCommitIndex, prevLogIndex, prevLogTerm);
+        throw new NotImplementedException();
     }
 
-    public void ApplyCommand(string key, string value)
+    public void ApplyCommand(ClientCommandData data)
     {
-        ((IServerNode)InnerNode).ApplyCommand(key, value);
+        throw new NotImplementedException();
     }
 
     public void ApplyCommittedLogs()
@@ -113,19 +113,20 @@ public class SimulationNode : IServerNode
         ((IServerNode)InnerNode).requestRPC(sender, rpcType);
     }
 
-    public Task<bool> RequestVoteAsync(IServerNode candidate, int term)
+    public Task<bool> RequestVoteAsync(VoteRequestData request)
     {
-        return ((IServerNode)InnerNode).RequestVoteAsync(candidate, term);
+        throw new NotImplementedException();
     }
 
-    public void respondRPC()
+    public void respondRPC(VoteResponseData response)
     {
-        ((IServerNode)InnerNode).respondRPC();
+        throw new NotImplementedException();
     }
 
-    public Task<(int Term, int LastLogIndex)> RespondToAppendEntriesAsync()
+
+    public Task<(int Term, int LastLogIndex)> RespondToAppendEntriesAsync(RespondEntriesData response)
     {
-        return ((IServerNode)InnerNode).RespondToAppendEntriesAsync();
+        throw new NotImplementedException();
     }
 
     public Task SendAppendEntriesAsync()
