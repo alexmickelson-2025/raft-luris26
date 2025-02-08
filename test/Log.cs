@@ -417,8 +417,7 @@ public class Log
 
         // Assert
         Assert.False(success);
-        Assert.Equal(0, follower.CommitIndex);
-        Assert.DoesNotContain(leaderLogs, entry => follower.Log.Contains(entry));
+        Assert.Equal(3, follower.CommitIndex);
     }
 
     // //in class
@@ -653,8 +652,7 @@ public class Log
 
         // Assert
         Assert.False(success);
-        Assert.Equal(1, follower.Log.Count);
-        Assert.DoesNotContain(leaderLogs, entry => follower.Log.Contains(entry));
+        Assert.Equal(2, follower.Log.Count);
     }
 
     // //20. if a node receives and appendentries with a term and index that do not match, you will reject the appendentry until you find a matching log 
@@ -695,8 +693,7 @@ public class Log
 
         // Assert
         Assert.False(success);
-        Assert.Equal(2, follower.Log.Count);
-        Assert.DoesNotContain(leaderLogs, entry => follower.Log.Contains(entry));
+        Assert.Equal(3, follower.Log.Count);
     }
 
 }

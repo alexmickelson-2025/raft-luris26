@@ -7,19 +7,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls("http://0.0.0.0:5000");
 
 
-var app = builder.Build();
 
 var nodeId = Environment.GetEnvironmentVariable("NODE_ID") ?? throw new Exception("NODE_ID environment variable not set");
 var otherNodesRaw = Environment.GetEnvironmentVariable("OTHER_NODES") ?? throw new Exception("OTHER_URL environment variable not set");
 var nodeInternalScalarRaw = Environment.GetEnvironmentVariable("NODE_INTERVAL") ?? throw new Exception("NODE_INTERVAL environment variable not set");
-var nodeLogger = app.Services.GetRequiredService<ILogger<HttpRpcOtherNode>>();
-
+var app = builder.Build();
 
 var ServicesName = nodeId + "#Node";
+
 List<IServerNode> otherNodes = otherNodesRaw
     .Split(";")
-    .Select(s => new ServerNode(vote: false, id: s.Split(",")[0]))
-    .ToList<IServerNode>();
+    .Select(s => (IServerNode)new HttpRpcOtherNode(int.Parse(s.Split(",")[0]), s.Split(",")[1]))
+    .ToList();
 
 var node = new ServerNode(vote: false, neighbors: otherNodes, id: nodeId);
 node.StartSimulationLoop();
@@ -32,7 +31,6 @@ app.MapGet("/nodeData", () =>
     {
         Id = node.Id,
         State = node.State.ToString(),
-        // ElectionTimeout = node.ElectionTimeout.TotalMilliseconds,
         Term = node.Term,
         CurrentTermLeader = node.GetCurrentLeader()?.Id ?? "None",
         CommittedEntryIndex = node.CommitIndex,

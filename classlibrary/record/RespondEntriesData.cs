@@ -1,5 +1,5 @@
 public record RespondEntriesData
 {
-    int Term;
-    int LastLogIndex;
+    public int Term;
+    public int LastLogIndex;
 }
