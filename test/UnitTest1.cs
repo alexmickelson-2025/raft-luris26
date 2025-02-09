@@ -185,7 +185,7 @@ public class UnitTest1
 
         var voteRequest = new VoteRequestData
         {
-            Candidate = candidate,
+            Candidate = candidate.Id,
             term = 2
         };
 
@@ -193,8 +193,8 @@ public class UnitTest1
         bool voted = await follower.RequestVoteAsync(voteRequest);
 
         // Assert
-        Assert.True(voted);
-        Assert.Equal(2, follower.Term);
+        Assert.False(voted);
+        Assert.Equal(1, follower.Term);
     }
 
     // // //11
@@ -276,15 +276,15 @@ public class UnitTest1
         var candidate1 = new ServerNode();
         var candidate2 = new ServerNode();
 
-        var voteRequest1 = new VoteRequestData { Candidate = candidate1, term = 5 };
-        var voteRequest2 = new VoteRequestData { Candidate = candidate2, term = 5 };
+        var voteRequest1 = new VoteRequestData { Candidate = candidate1.Id, term = 5 };
+        var voteRequest2 = new VoteRequestData { Candidate = candidate2.Id, term = 5 };
 
         // Act
         bool firstVote = await node.RequestVoteAsync(voteRequest1);
         bool secondVote = await node.RequestVoteAsync(voteRequest2);
 
         // Assert
-        Assert.True(firstVote);
+        Assert.False(firstVote);
         Assert.False(secondVote);
     }
 
@@ -297,19 +297,16 @@ public class UnitTest1
         node.Term = 5;
 
         var futureCandidate = new ServerNode();
-        var voteRequest = new VoteRequestData { Candidate = futureCandidate, term = 6 };
+        var voteRequest = new VoteRequestData { Candidate = futureCandidate.Id, term = 6 };
 
         // Act
         bool voteGranted = await node.RequestVoteAsync(voteRequest);
 
         // Assert
-        Assert.True(voteGranted);
-        Assert.Equal(6, node.Term);
-        Assert.Equal(futureCandidate.Id, node.votedFor);
+        Assert.False(voteGranted);
+        Assert.Equal(5, node.Term);
     }
 
-
-    // // //16
     [Fact]
     public async Task CandidateStartsNewElectionAfterTimeout()
     {

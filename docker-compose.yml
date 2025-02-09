@@ -73,6 +73,7 @@ services:
     volumes:
       - ./raftClient:/app/raftClient
       - ./classlibrary:/app/classlibrary
+      - ./data-protection-keys:/var/keys
     environment:
       - NODE_URL=http://node1:5000,http://node2:5000,http://node3:5000
     command: dotnet watch --project raftClient

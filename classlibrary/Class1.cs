@@ -136,7 +136,7 @@ public class ServerNode : IServerNode
             votedFor = Id;
             _votesReceived = 1;
 
-            VoteRequestData data = new VoteRequestData { Candidate = this, term = Term };
+            VoteRequestData data = new VoteRequestData { Candidate = Id, term = Term };
             var voteTasks = _neighbors.Select(n => n.RequestVoteAsync(data));
             var voteResults = await Task.WhenAll(voteTasks);
 
@@ -187,7 +187,7 @@ public class ServerNode : IServerNode
         var log = new List<LogEntry>();
         AppendEntriesData data = new AppendEntriesData
         {
-            leader = this,
+            leader = Id,
             term = Term,
             logEntries = log,
             leaderCommitIndex = 0,
@@ -219,25 +219,28 @@ public class ServerNode : IServerNode
 
     public async Task<bool> RequestVoteAsync(VoteRequestData data)
     {
-        await Task.Delay(50);
+        if (string.IsNullOrEmpty(data.Candidate))
+        {
+            Console.WriteLine("⚠️ Received vote request with empty CandidateId!");
+            return false;
+        }
+
+        var candidateNode = _neighbors.FirstOrDefault(n => n.Id == data.Candidate);
+        if (candidateNode == null)
+        {
+            return false;
+        }
 
         if (data.term > Term)
         {
             Term = data.term;
-            votedFor = data.Candidate.Id;
-            _hasVoted = true;
-            return true;
-        }
-
-        if (data.term == Term && string.IsNullOrEmpty(votedFor))
-        {
-            votedFor = data.Candidate.Id;
-            _hasVoted = true;
+            votedFor = candidateNode.Id;
             return true;
         }
 
         return false;
     }
+
 
     //
     public async Task<bool> AppendEntries(AppendEntriesData data)
@@ -255,10 +258,11 @@ public class ServerNode : IServerNode
                 Log.Add(entry);
             }
         }
+        var leaderNode = _neighbors.FirstOrDefault(n => n.Id == data.leader);
         if (data.term > Term || State == NodeState.Candidate)
         {
             Term = data.term;
-            _innerNode = data.leader;
+            _innerNode = leaderNode;
             State = NodeState.Follower;
             ResetElectionTimer();
         }
@@ -280,10 +284,11 @@ public class ServerNode : IServerNode
             }
         }
 
+        var leaderNode1 = _neighbors.FirstOrDefault(n => n.Id == data.leader);
         if (data.term >= Term)
         {
             Term = data.term;
-            _innerNode = data.leader;
+            _innerNode = leaderNode1;
             State = NodeState.Follower;
             ResetElectionTimer();
         }
@@ -355,7 +360,7 @@ public class ServerNode : IServerNode
             {
                 AppendEntriesData data = new AppendEntriesData
                 {
-                    leader = this,
+                    leader = Id,
                     logEntries = new List<LogEntry> { command },
                     leaderCommitIndex = CommitIndex,
                     prevLogIndex = Log.Count - 1,
@@ -410,7 +415,7 @@ public class ServerNode : IServerNode
 
             AppendEntriesData request = new AppendEntriesData
             {
-                leader = this,
+                leader = Id,
                 term = Term,
                 leaderCommitIndex = CommitIndex,
                 prevLogIndex = prevLogIndex,
@@ -481,7 +486,7 @@ public class ServerNode : IServerNode
             {
                 AppendEntriesData data = new AppendEntriesData
                 {
-                    leader = this,
+                    leader = Id,
                     term = Term,
                     logEntries = new List<LogEntry> { logEntry },
                     leaderCommitIndex = NextIndex[neighbor.Id] - 1,

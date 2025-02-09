@@ -3,7 +3,7 @@ using classlibrary;
 
 public record AppendEntriesData
 {
-    public IServerNode leader { get; set; }
+    public string leader { get; set; }
     public int term { get; set; }
     public List<LogEntry> logEntries { get; set; }
     public int leaderCommitIndex { get; set; }

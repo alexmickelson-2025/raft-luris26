@@ -100,6 +100,18 @@ public class HttpRpcOtherNode : IServerNode
     {
         throw new NotImplementedException();
     }
+    public async Task<NodeData?> GetNodeDataAsync(string nodeUrl)
+    {
+        try
+        {
+            return await client.GetFromJsonAsync<NodeData>($"{nodeUrl}/nodeData");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ Error al obtener datos de {nodeUrl}: {ex.Message}");
+            return null;
+        }
+    }
 
     public async Task requestRPC(IServerNode sender, string rpcType)
     {

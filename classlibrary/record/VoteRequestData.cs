@@ -2,6 +2,6 @@ using classlibrary;
 
 public record VoteRequestData
 {
-    public IServerNode Candidate { get; set; }
+    public string Candidate { get; set; }
     public int term { get; set; }
 }

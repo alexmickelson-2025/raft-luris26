@@ -1,5 +1,4 @@
-﻿
-@page "/home"
+﻿@page "/home"
 @rendermode InteractiveServer
 @using System.Collections.Concurrent
 @using System.Net.Http.Json
@@ -7,6 +6,7 @@
 <PageTitle>Raft Cluster</PageTitle>
 
 <h1>Raft Cluster Status</h1>
+
 
 <table class="table">
     <thead>
@@ -17,6 +17,7 @@
             <th>Leader</th>
             <th>Send Command</th>
             <th>Logs</th>
+            <th>Cluster State</th>
         </tr>
     </thead>
     <tbody>
@@ -33,6 +34,9 @@
                 </td>
                 <td>
                     <pre>@(node.Value?.Log != null ? string.Join("\n", node.Value.Log) : "No logs")</pre>
+                </td>
+                <td>
+                    @GetClusterState(node.Value)
                 </td>
             </tr>
         }
@@ -116,6 +120,19 @@
         {
             Console.WriteLine("No command entered for the node.");
         }
+    }
+
+    private string GetClusterState(NodeData? node)
+    {
+        if (node == null)
+            return "🔴 Node Down";
+
+        if (data.Count(n => n.Value != null) >= 2)
+            return "🟢 Fully Functional Cluster";
+        else if (data.Count(n => n.Value != null) == 1)
+            return "🟠 Partial Cluster - No Election Possible";
+        else
+            return "🔴 Cluster Unavailable";
     }
 
     public void Dispose()
